@@ -31,3 +31,6 @@ launch/remotion/node_modules/
 # Local Kane assurance state and raw Bugsy runner logs
 .context/
 bugsy/.run/
+
+# parked git backups
+.git-old-*/
