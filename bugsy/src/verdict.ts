@@ -2,17 +2,24 @@
 import { basename } from 'node:path';
 import type { KaneMember, Scenario, ScenarioOutcome, Verdict } from './types.ts';
 
+export interface ScenarioEvidence {
+  status: string;
+  failed_step?: number;
+  screenshot?: string;
+  error?: string;
+}
+
 export interface VerdictInput {
   scenarios: Scenario[];
   members: KaneMember[];
   /** the run's evidence pack was found and read */
   packPresent: boolean;
-  /** the Kane run completed (testrun_done seen, execution id known); false makes every verdict inconclusive */
-  completed?: boolean;
+  /** A completed, non-cancelled run with consistent exit and terminal status. */
+  completed: boolean;
   /** per scenario id: the step texts of its _test.md (## headings + body), for locating the failed step */
   steps?: Record<string, string[]>;
-  /** per scenario id: failed step / screenshot from the evidence export, to enrich the outcome */
-  evidence?: Record<string, { failed_step?: number; screenshot?: string; error?: string }>;
+  /** Matched per-scenario result records from the evidence pack. */
+  evidence: Record<string, ScenarioEvidence>;
 }
 
 const SIGN_IN_RE = /\b(sign|log)\s*-?\s*in\b|\bcredentials?\b|\bpassword\b/i;
@@ -101,6 +108,15 @@ export function judgeLeak(
 export function evaluate(input: VerdictInput): ScenarioOutcome[] {
   const anyBroken = input.members.some((m) => m.status === 'broken' || m.status === 'interrupted');
   const byId = new Map(input.scenarios.map((s) => [s.id, s]));
+  const evidenceIssue = (id: string, member: KaneMember | undefined): string | undefined => {
+    if (!input.packPresent) return 'evidence pack missing or unreadable';
+    const result = input.evidence?.[id];
+    if (!result) return `no matching evidence result for ${id}`;
+    if (!member) return `no Kane result for ${id}`;
+    if (result.status !== member.status) return `evidence status for ${id} does not match the Kane result`;
+    if (member.status === 'passed' && result.failed_step !== undefined) return `evidence for ${id} contains a failed step despite a passing result`;
+    return undefined;
+  };
   return input.scenarios.map((s) => {
     const m = memberFor(s, input.members);
     const ev = input.evidence?.[s.id];
@@ -112,7 +128,14 @@ export function evaluate(input: VerdictInput): ScenarioOutcome[] {
       reason: '',
     };
     // An incomplete run (cancelled, timed out, no completion event) proves nothing, whatever the pack holds.
-    if (input.completed === false) return { ...base, reason: 'run did not complete (no completion event / execution id)' };
+    if (input.completed !== true) return { ...base, reason: 'run incomplete, cancelled, or inconsistent' };
+    const ownIssue = evidenceIssue(s.id, m);
+    if (ownIssue) return { ...base, reason: ownIssue };
+    if (s.kind === 'leak_check' && s.control_id) {
+      const control = memberFor(byId.get(s.control_id) ?? ({ id: s.control_id } as Scenario), input.members);
+      const controlIssue = evidenceIssue(s.control_id, control);
+      if (controlIssue) return { ...base, reason: `paired control: ${controlIssue}` };
+    }
     const step = m?.failure?.step_index ?? ev?.failed_step;
     if (step !== undefined && m?.status !== 'passed') base.failed_step = step;
     // prefer the pack's expected/saw detail; fall back to the stream's failure message

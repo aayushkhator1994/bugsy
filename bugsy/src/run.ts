@@ -4,7 +4,7 @@ import { basename, resolve } from 'node:path';
 import { startApp } from './app-runner.ts';
 import { runTestrun, type TestrunState } from './kane.ts';
 import { exportEvidence, parseTestSteps, type ExportResult } from './evidence.ts';
-import { evaluate, memberFor } from './verdict.ts';
+import { evaluate, memberFor, type ScenarioEvidence } from './verdict.ts';
 import type { BugsyConfig, KaneRunResult, Scenario, ScenarioOutcome } from './types.ts';
 
 export interface Ctx {
@@ -60,32 +60,46 @@ export interface Judged {
 export function judgeRun(ctx: Ctx, run: RunResult, scenarios: Scenario[]): Judged {
   let exported: ExportResult | undefined;
   if (run.pack_path && run.execution_id) {
-    exported = exportEvidence({
-      packPath: run.pack_path,
-      executionId: run.execution_id,
-      root: ctx.root,
-      exportDir: ctx.cfg.evidence_export_dir,
-      members: run.members,
-      secrets: Object.values(ctx.cfg.accounts).map((a) => a.password),
-    });
+    try {
+      exported = exportEvidence({
+        packPath: run.pack_path,
+        executionId: run.execution_id,
+        root: ctx.root,
+        exportDir: ctx.cfg.evidence_export_dir,
+        members: run.members,
+        secrets: Object.values(ctx.cfg.accounts).map((a) => a.password),
+      });
+    } catch {
+      ctx.log('  Evidence pack could not be read; verdicts are inconclusive');
+    }
   }
   const steps: Record<string, string[]> = {};
-  const evidence: Record<string, { failed_step?: number; screenshot?: string; error?: string }> = {};
+  const evidence: Record<string, ScenarioEvidence> = {};
   for (const s of scenarios) {
     const m = memberFor(s, run.members);
     if (m) {
       const p = [resolve(ctx.root, m.path), resolve(ctx.root, ctx.cfg.tests_dir, basename(m.path))].find(existsSync);
       if (p) steps[s.id] = parseTestSteps(readFileSync(p, 'utf8'));
-      const t = exported?.tests.find((x) => x.member_path === m.path || (m.test_id && x.test_id === m.test_id));
+      const matches = exported?.tests.filter((x) => x.member_path === m.path || (m.test_id && x.test_id === m.test_id)) ?? [];
+      // Missing or ambiguous records cannot establish this scenario's result.
+      const t = matches.length === 1 ? matches[0] : undefined;
       if (t) {
         const f = t.failure;
         const detail = f?.expected || f?.actual ? `expected "${f.expected ?? '?'}", saw "${f.actual ?? '?'}"` : f?.error;
-        evidence[s.id] = { failed_step: t.failed_step, screenshot: t.screenshot, error: detail };
+        evidence[s.id] = { status: t.status, failed_step: t.failed_step, screenshot: t.screenshot, error: detail };
       }
     }
   }
-  const completed = run.state.done && !!run.execution_id && run.members.length > 0;
-  if (!completed) ctx.log('  Kane run did not complete cleanly: every verdict is inconclusive');
+  const status = run.state.overall_status;
+  const consistentExit = (status === 'passed' && run.exit_code === 0) || (status === 'failed' && run.exit_code === 1);
+  const consistentMembers = status === 'passed'
+    ? run.members.every((m) => m.status === 'passed')
+    : status === 'failed' && run.members.some((m) => m.status === 'failed');
+  const completed = run.state.done && !!run.execution_id && run.members.length > 0
+    && consistentExit && consistentMembers
+    && (run.overall_status === undefined || run.overall_status === status)
+    && !run.state.plan_invalid && run.state.errors.length === 0;
+  if (!completed) ctx.log('  Kane run was incomplete, cancelled, or inconsistent: every verdict is inconclusive');
   const outcomes = evaluate({ scenarios, members: run.members, packPresent: !!exported, completed, steps, evidence });
   return { outcomes, exported };
 }

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { evaluate, judgeLeak, patchMayCommit, selfCheckPassed, denialMarkers } from '../src/verdict.ts';
+import { evaluate as evaluateVerdicts, judgeLeak, patchMayCommit, selfCheckPassed, denialMarkers, memberFor, type VerdictInput } from '../src/verdict.ts';
 import { PREPARED_SCENARIOS as SC } from '../src/prepared.ts';
 import type { KaneMember } from '../src/types.ts';
 
@@ -14,6 +14,16 @@ const S2_STEPS = [
 ];
 const leakFail = { message: "Expected 'Invoice not found' but saw 'Client: Umbrella'", step_index: 5 };
 const ctx = { packPresent: true, anyBroken: false, steps: S2_STEPS };
+
+// Unit fixtures describe completed runs with matching evidence records.
+// run.test.ts exercises missing and conflicting evidence archives.
+function evaluate(input: Omit<VerdictInput, 'completed' | 'evidence'>) {
+  const evidence = Object.fromEntries(input.scenarios.flatMap((s) => {
+    const member = memberFor(s, input.members);
+    return member ? [[s.id, { status: member.status }]] : [];
+  }));
+  return evaluateVerdicts({ ...input, completed: true, evidence });
+}
 
 test('markers come from quoted expected text', () => {
   assert.deepEqual(denialMarkers(S2), ['Invoice not found', 'Umbrella', '$4,000.00']);
