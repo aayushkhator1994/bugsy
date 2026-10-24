@@ -6,6 +6,7 @@
   </div>
   <a class="btn primary" href="/invoices/new">New invoice</a>
 </div>
+<div class="hero"><div><b>Your orders, all in one place</b><span>Review what you have bought, and settle anything outstanding.</span><br><span class="code">NORTH15</span></div><svg width="120" height="80" viewBox="0 0 120 80" aria-hidden="true"><rect x="10" y="30" width="60" height="44" rx="4" fill="#c2410c"/><path d="M10 30l10-14h40l10 14z" fill="#9a3412"/><rect x="34" y="30" width="12" height="44" fill="#fed7aa"/><circle cx="92" cy="30" r="20" fill="#fff" opacity=".6"/><path d="M84 30l6 6 10-12" fill="none" stroke="#c2410c" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
 <div class="card">
   <table>
     <thead><tr><th>Invoice #</th><th>Client</th><th>Amount</th><th>Status</th></tr></thead>
@@ -13,13 +14,14 @@
     <% rows.forEach(function(r) { %>
       <tr>
         <td class="num"><a href="/invoices/<%= r.id %>">#<%= r.id %></a></td>
-        <td><%= r.client %></td>
+        <td><div class="cell"><svg class="thumb" viewBox="0 0 44 44" aria-hidden="true"><% var k=(r.id||0)%4; var cols=['#fde68a','#bfdbfe','#fecdd3','#bbf7d0']; %><rect width="44" height="44" fill="<%= cols[k] %>"/><% if(k===0){ %><path d="M13 17h18l-1.5 14h-15z" fill="#b45309"/><path d="M17 17a5 5 0 0110 0" fill="none" stroke="#78350f" stroke-width="2"/><% } else if(k===1){ %><rect x="12" y="16" width="20" height="14" rx="2" fill="#1d4ed8"/><circle cx="22" cy="23" r="4" fill="#dbeafe"/><% } else if(k===2){ %><path d="M22 31l-9-9a5.5 5.5 0 018-8l1 1 1-1a5.5 5.5 0 018 8z" fill="#e11d48"/><% } else { %><path d="M12 30c0-12 8-16 20-16 0 12-6 18-20 16z" fill="#15803d"/><path d="M14 30l12-12" stroke="#dcfce7" stroke-width="2"/><% } %></svg><span><%= r.client %></span></div></td>
         <td class="amt"><%= r.amount %></td>
         <td><span class="pill <%= r.status %>"><%= r.status %></span></td>
       </tr>
     <% }) %>
     </tbody>
   </table>
-  <div class="total"><span class="v">Total outstanding: <%= outstanding %></span><span class="sub">unpaid invoices</span></div>
+  <div class="total"><span class="v">Total outstanding: <%= outstanding %></span><span class="sub">on unpaid orders</span></div>
 </div>
+<div class="perks"><div class="perk"><b>Free returns</b>30 days, no questions asked.</div><div class="perk"><b>Secure checkout</b>Your details stay private.</div><div class="perk"><b>Friendly support</b>Real people, 7 days a week.</div></div>
 <%- include('_foot') %>

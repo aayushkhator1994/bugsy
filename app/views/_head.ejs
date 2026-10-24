@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title><%= title %> · Ledger</title>
+<title><%= title %> · Northwind Goods</title>
 <style>
   :root {
     --bg: #f6f7f9; --card: #ffffff; --fg: #0f172a; --muted: #64748b; --line: #e2e8f0;
@@ -84,16 +84,64 @@
 
   footer { border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; }
   footer .in { max-width: 880px; margin: 0 auto; padding: 14px 20px; display: flex; justify-content: space-between; }
+
+  :root { --brand:#c2410c; --brand-soft:#ffedd5; --ink:#1c1917; --fg:#1c1917; --bg:#faf7f2; --line:#e7e0d5; --muted:#78716c; }
+  .promo { background: var(--ink); color: #fde8d0; text-align: center; font-size: 12.5px; padding: 7px 12px; letter-spacing: .02em; }
+  .topbar { background:#fff; border-bottom:1px solid var(--line); position: sticky; top:0; z-index:5; }
+  .topbar .in { max-width: 1040px; }
+  .logo .mark { background: transparent; width: 34px; height: 34px; }
+  .logo .mark svg { display:block; }
+  .logo { font-size: 19px; }
+  .search { flex:1; max-width: 420px; margin: 0 12px; position: relative; }
+  .search input { width:100%; padding: 9px 14px 9px 38px; border-radius: 999px; border:1px solid var(--line); background:#faf7f2; font: inherit; font-size: 14px; }
+  .search svg { position:absolute; left:13px; top:50%; transform:translateY(-50%); }
+  .cart { position:relative; display:grid; place-items:center; width:38px; height:38px; border-radius:50%; color: var(--fg); }
+  .cart:hover { background:#f5f0e8; }
+  .cart .dot { position:absolute; top:2px; right:0; background:var(--brand); color:#fff; font-size:10px; font-weight:700; min-width:16px; height:16px; border-radius:8px; display:grid; place-items:center; }
+  .subnav { background:#fff; border-bottom:1px solid var(--line); }
+  .subnav .in { max-width:1040px; margin:0 auto; padding:0 20px; display:flex; gap:22px; font-size:13.5px; overflow-x:auto; }
+  .subnav a { color: var(--muted); padding:10px 0; border-bottom:2px solid transparent; white-space:nowrap; }
+  .subnav a.on { color: var(--fg); border-color: var(--brand); font-weight:600; }
+  .subnav a:hover { color: var(--fg); text-decoration:none; }
+  main { max-width: 1040px; }
+  .hero { display:flex; align-items:center; justify-content:space-between; gap:20px; background: linear-gradient(120deg,#fdebd3,#fbd5b0); border-radius:16px; padding:22px 28px; margin-bottom:26px; overflow:hidden; }
+  .hero b { display:block; font-size:19px; letter-spacing:-.01em; color:#7c2d12; }
+  .hero span { color:#9a3412; font-size:14px; }
+  .hero svg { flex:none; }
+  .hero .code { display:inline-block; margin-top:8px; border:1.5px dashed #c2410c; color:#9a3412; padding:2px 10px; border-radius:6px; font-weight:700; font-size:12px; letter-spacing:.08em; }
+  .btn.primary:hover { background:#9a3412; }
+  th { background:#faf7f2; }
+  tbody tr:hover td { background:#fffaf3; }
+  .total { background:#faf7f2; }
+  .cell { display:flex; align-items:center; gap:12px; }
+  .thumb { width:44px; height:44px; border-radius:10px; flex:none; display:block; }
+  .perks { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:26px; }
+  .perk { background:#fff; border:1px solid var(--line); border-radius:12px; padding:14px 16px; font-size:13px; color:var(--muted); }
+  .perk b { display:block; color:var(--fg); font-size:14px; margin-bottom:2px; }
+  .detail { display:grid; grid-template-columns: 220px 1fr; gap:26px; align-items:start; }
+  .detail .big { width:100%; height:auto; border-radius:14px; }
+  .auth { max-width: 420px; }
+  footer { background:#fff; margin-top:30px; }
+  footer .in { max-width:1040px; display:block; padding:26px 20px 18px; }
+  footer .cols { display:grid; grid-template-columns:2fr 1fr 1fr 1fr; gap:24px; margin-bottom:20px; }
+  footer h4 { margin:0 0 8px; color:var(--fg); font-size:13px; }
+  footer .cols a { display:block; color:var(--muted); padding:2px 0; }
+  footer .bottom { display:flex; justify-content:space-between; border-top:1px solid var(--line); padding-top:12px; }
+  @media (max-width:700px){ .search{display:none} .perks,.detail{grid-template-columns:1fr} footer .cols{grid-template-columns:1fr 1fr} .hero svg{display:none} th,td{padding:10px 8px} .topbar .who span{display:none} }
 </style>
 </head>
 <body>
 <% if (typeof nav === 'undefined' || nav !== false) { %>
+<div class="promo">Free shipping on orders over $50 &middot; Spring sale: take 15% off with code NORTH15</div>
 <div class="topbar"><div class="in">
-  <a class="logo" href="/invoices"><span class="mark">L</span> Ledger</a>
+  <a class="logo" href="/invoices"><span class="mark"><svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><rect width="34" height="34" rx="9" fill="#c2410c"/><path d="M9 25V9l16 16V9" fill="none" stroke="#fff" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"/></svg></span> Northwind Goods</a>
+  <div class="search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#78716c" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input type="text" placeholder="Search for products" aria-label="Search products" autocomplete="off"></div>
   <div class="who">
     <% if (typeof userEmail !== 'undefined' && userEmail) { %><span><%= userEmail %></span><% } %>
+    <a class="cart" href="/invoices" aria-label="Cart"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h2l2.4 11h10.2L20 7H6"/><circle cx="9" cy="19.5" r="1.4"/><circle cx="17" cy="19.5" r="1.4"/></svg><span class="dot">2</span></a>
     <form method="post" action="/logout"><button class="btn ghost" type="submit">Sign out</button></form>
   </div>
 </div></div>
+<div class="subnav"><div class="in"><a href="/invoices" class="on">My account</a><a href="/invoices">Orders &amp; billing</a><a href="/invoices">Wishlist</a><a href="/invoices">Addresses</a><a href="/invoices">Help centre</a></div></div>
 <% } %>
 <main>

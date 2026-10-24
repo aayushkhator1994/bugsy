@@ -8,7 +8,9 @@
   </div>
   <span class="pill <%= inv.status %>"><%= inv.status %></span>
 </div>
-<div class="card"><div class="pad">
+<div class="card"><div class="pad"><div class="detail">
+  <svg class="big" viewBox="0 0 220 220" aria-hidden="true"><rect width="220" height="220" fill="#fde68a"/><circle cx="110" cy="110" r="78" fill="#fef3c7"/><path d="M70 90h80l-8 74H78z" fill="#b45309"/><path d="M88 90a22 22 0 0144 0" fill="none" stroke="#78350f" stroke-width="7"/></svg>
+  <div>
   <%# Each line is one contiguous text node ("Client: Initech") so browser tests can assert the phrase. %>
   <div class="facts">
     <p>Client: <%= inv.client %></p>
@@ -20,5 +22,6 @@
     <button class="btn primary" type="submit">Mark as paid</button>
   </form>
   <% } %>
-</div></div>
+  </div>
+</div></div></div>
 <%- include('_foot') %>
