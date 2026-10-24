@@ -1,0 +1,96 @@
+evidence: '0.1'
+test: s1-owner-reads-own-e29fb640
+status: passed
+duration_ms: 7109
+definition:
+  path: test.md
+  sha256: sha256:d1fdb91d5f5b1f40eecdbff025193a5582080c1382b7c93f6bf24df957c752e6
+definition_id: sha256:701c9e7e08d774ae7b10510ca4bbfb8ce57c10018d4d88e74a0e2c66c9073265
+external_id:
+  execution_id: b50b6a4b-9374-4290-8447-c9fec36bc321
+  session_id: ecd6cea0-e4e1-4737-b4bd-3e6817dbe7de
+  commit_id: f2343791-ab5c-4d79-9cc2-6439e5360482
+  test_id: 0f0e0986-44e3-40f2-b6cc-13817cae695f
+  testcase_id: 01M5QXNQG94SBJ5N9VEJQJN9T9
+  project_id: 01M5QMQX51SAGFK78B3HKK1B4G
+  folder_id: 01M5QMQZYE38T17PVAZHSXH47B
+  org_id: '3394521'
+  session_name: S1_owner_reads_own
+  user_name: aayushkhator1994
+  user_email: aayushkhator1994@gmail.com
+environment:
+  model: v16-alpha
+  os: macOS
+  browser: Chrome
+  browser_version: '155'
+  resolution: 1920x1080
+  platform: Desktop
+  platform_type: web
+  run_kind: replay
+  os_version: 27.0.1
+steps:
+  - id: 0-1
+    ordinal: 1
+    status: passed
+    kind: navigate
+    duration_ms: 100
+    action_id: c8a2ac56-1c67-4778-af0f-65aed2841f5c
+  - id: 0-2
+    ordinal: 2
+    status: passed
+    kind: wait
+    duration_ms: 1100
+    action_id: 657036eb-4e5f-46b4-b71b-039772937d1b
+  - id: 0-3
+    ordinal: 3
+    status: passed
+    kind: fill
+    duration_ms: 100
+    action_id: bedb23c7-01df-4c7e-ba49-a9d842564421
+  - id: 0-4
+    ordinal: 4
+    status: passed
+    kind: wait
+    duration_ms: 1000
+    action_id: 7173f20a-394b-45d0-879d-bd6cb8fc4f95
+  - id: 0-5
+    ordinal: 5
+    status: passed
+    kind: fill
+    duration_ms: 100
+    action_id: 03854e89-642b-4720-b694-0e7db70e8319
+  - id: 0-6
+    ordinal: 6
+    status: passed
+    kind: click
+    duration_ms: 600
+    action_id: 8416311b-e7ee-4807-a535-c73ffe9efeb0
+  - id: 1-1
+    ordinal: 7
+    status: passed
+    kind: click
+    duration_ms: 600
+    action_id: 1d84f71c-97c1-4991-9509-fe27984d528c
+    verifies: &ref_0
+      - ac-4
+  - id: 1-2
+    ordinal: 8
+    status: passed
+    kind: wait
+    duration_ms: 1100
+    action_id: 8f28417f-00db-47b6-9127-e4b6132ed9e2
+    verifies: *ref_0
+  - id: 1-3
+    ordinal: 9
+    status: passed
+    kind: analyze
+    duration_ms: 100
+    action_id: 018559d1-f50a-4c9f-8e93-5e6ced34f9bd
+    verifies: *ref_0
+  - id: 1-4
+    ordinal: 10
+    status: passed
+    kind: assert
+    duration_ms: 100
+    action_id: 04da1d38-3c82-426d-8e73-af153d94215f
+    verifies: *ref_0
