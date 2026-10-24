@@ -30,6 +30,22 @@
       "valid": true,
       "uploaded": true,
       "at": "2026-10-24T21:59:41.161Z"
+    },
+    {
+      "execution_id": "6173e8eb-e879-4feb-ac28-2654b42991f9",
+      "run_kind": "replay",
+      "status": "failed",
+      "valid": true,
+      "uploaded": true,
+      "at": "2026-10-24T22:04:30.915Z"
+    },
+    {
+      "execution_id": "5c6d42cf-98be-4d8e-ab22-f0ec47f85955",
+      "run_kind": "replay",
+      "status": "passed",
+      "valid": true,
+      "uploaded": true,
+      "at": "2026-10-24T22:14:00.505Z"
     }
   ]
 }

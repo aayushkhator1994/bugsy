@@ -1,0 +1,34 @@
+step: 4-5
+status: broken
+error:
+  message: 'assertion_failed: @ step 5'
+  type: replay_failure
+page_state:
+  url: http://localhost:3100/invoices/4
+  screenshot: steps/22-4-5/screenshot.jpg
+locator_context:
+  replay_reason: 'assertion_failed: @ step 5'
+console_at_failure:
+  ref: logs/4-console.ndjson
+  step: 4-5
+network_at_failure:
+  ref: logs/4-network.har
+  step: 4-5
+title: Invoice 4 fixture is no longer absent
+triage:
+  status: triaged
+  by:
+    kind: agent
+    id: v16-investigation/replay
+    at: '2026-10-24T22:04:28.760072+00:00'
+  rca:
+    root_cause: 'The recording relies on old test data: invoice 4 was expected to
+      be absent, but it now exists in the live data.'
+    category: automation_bug/test_data_issue
+    confidence: 0.98
+  verification:
+    status: not_verified
+  severity: minor
+  suggested_fix:
+    summary: Refresh or isolate the test fixture. Use an invoice ID guaranteed to
+      be absent, or change the expectation if invoice 4 is now intended to exist.

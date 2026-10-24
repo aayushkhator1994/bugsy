@@ -1,0 +1,13 @@
+generated: 2026-10-24T22:04:29.285Z
+totals:
+  failures: 1
+  triaged: 1
+  untriaged: 0
+failures:
+  - test: s2-other-reads-by-url-b217028d
+    ordinal: 22
+    step: 4-5
+    status: broken
+    path: tests/s2-other-reads-by-url-b217028d/steps/22-4-5/failure.yaml
+    title: Invoice 4 fixture is no longer absent
+    triage_status: triaged

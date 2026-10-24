@@ -1,7 +1,7 @@
 {
   "version": 1,
   "app": "Ledger",
-  "generated_at": "2026-10-24T21:54:40.409Z",
+  "generated_at": "2026-10-24T22:14:01.632Z",
   "findings": [
     {
       "scenario": "S2_other_reads_by_url",
@@ -32,14 +32,20 @@
         "commit": "16216a9f1252e652b10d9d9116a443f1ae993bc8",
         "execution_id": "ac202a1e-9bf8-4bc0-8aab-c8458a2f2a59",
         "ok": true
+      },
+      "self_check": {
+        "execution_id": "6173e8eb-e879-4feb-ac28-2654b42991f9",
+        "S2": "failed",
+        "tests_detect_leak": false,
+        "leak_only": false
       }
     },
     {
       "scenario": "S3_list_isolation",
       "verdict": "denied_as_expected",
-      "commit": "bd410a34120759e154aee87288d9495b6075e960",
+      "commit": "bb5c31ce43bbc59adbd62013de6b6c35bd9b7f5c",
       "kane": {
-        "execution_id": "2c29d5fa-9e9e-4616-b253-ca2615a9d20e"
+        "execution_id": "5c6d42cf-98be-4d8e-ab22-f0ec47f85955"
       }
     }
   ],
@@ -139,6 +145,61 @@
           "reason": "denied, and the owner control passed"
         }
       ]
+    },
+    {
+      "at": "2026-10-24T22:04:32.213Z",
+      "phase": "self-check",
+      "commit": "bb5c31ce43bbc59adbd62013de6b6c35bd9b7f5c",
+      "execution_id": "6173e8eb-e879-4feb-ac28-2654b42991f9",
+      "exit_code": 1,
+      "summary": "patch 16216a9 reverted; S2 failed; tests did NOT detect the leak",
+      "outcomes": [
+        {
+          "scenario": "S1_owner_reads_own",
+          "kind": "control",
+          "status": "passed",
+          "verdict": "control_passed",
+          "reason": "passed"
+        },
+        {
+          "scenario": "S2_other_reads_by_url",
+          "kind": "leak_check",
+          "status": "failed",
+          "verdict": "inconclusive",
+          "reason": "evidence status for S2_other_reads_by_url does not match the Kane result"
+        }
+      ]
+    },
+    {
+      "at": "2026-10-24T22:14:01.632Z",
+      "phase": "scan",
+      "commit": "bb5c31ce43bbc59adbd62013de6b6c35bd9b7f5c",
+      "execution_id": "5c6d42cf-98be-4d8e-ab22-f0ec47f85955",
+      "exit_code": 0,
+      "summary": "S1 control_passed, S2 denied_as_expected, S3 denied_as_expected",
+      "outcomes": [
+        {
+          "scenario": "S1_owner_reads_own",
+          "kind": "control",
+          "status": "passed",
+          "verdict": "control_passed",
+          "reason": "passed"
+        },
+        {
+          "scenario": "S2_other_reads_by_url",
+          "kind": "leak_check",
+          "status": "passed",
+          "verdict": "denied_as_expected",
+          "reason": "denied, and the owner control passed"
+        },
+        {
+          "scenario": "S3_list_isolation",
+          "kind": "leak_check",
+          "status": "passed",
+          "verdict": "denied_as_expected",
+          "reason": "denied, and the owner control passed"
+        }
+      ]
     }
   ],
   "scenarios": [
@@ -195,8 +256,8 @@
     }
   ],
   "scan": {
-    "commit": "bd410a34120759e154aee87288d9495b6075e960",
-    "execution_id": "2c29d5fa-9e9e-4616-b253-ca2615a9d20e",
+    "commit": "bb5c31ce43bbc59adbd62013de6b6c35bd9b7f5c",
+    "execution_id": "5c6d42cf-98be-4d8e-ab22-f0ec47f85955",
     "used_prepared_tests": false,
     "outcomes": [
       {
@@ -209,12 +270,9 @@
       {
         "scenario": "S2_other_reads_by_url",
         "kind": "leak_check",
-        "status": "failed",
-        "verdict": "leak_confirmed",
-        "reason": "failed at step 5 (denial); control passed",
-        "failed_step": 5,
-        "failure_message": "Final verification failed: \"'Invoice not found' is shown and neither 'Umbrella' nor '$4,000.00' appears on the page.\"",
-        "screenshot": "evidence/2c29d5fa-9e9e-4616-b253-ca2615a9d20e/S2/27-screenshot.jpg"
+        "status": "passed",
+        "verdict": "denied_as_expected",
+        "reason": "denied, and the owner control passed"
       },
       {
         "scenario": "S3_list_isolation",

@@ -1,0 +1,176 @@
+evidence: '0.1'
+test: s2-other-reads-by-url-b217028d
+status: broken
+duration_ms: 37923
+definition:
+  path: test.md
+  sha256: sha256:35cc6579222e5e9ed4b43c2f1eb17e4674fddb5583755461ff1200ad8ef14cc0
+definition_id: sha256:4cbbeb7f266cbcbb2a3bd4c07da8d8b3d7d9e3996748cf4dec4af1c6639639f7
+external_id:
+  execution_id: 6173e8eb-e879-4feb-ac28-2654b42991f9
+  session_id: 9e337d04-77bb-4a22-aacc-de5fbd578027
+  commit_id: d84d4bc2-ca50-4d40-9163-0b2a4180d03f
+  test_id: 18fe47ce-f168-4fc8-be6f-a3ec74a17076
+  testcase_id: 01M5QXQH1A0ATZQ7S48GHRK2E6
+  project_id: 01M5QMQX51SAGFK78B3HKK1B4G
+  folder_id: 01M5QMQZYE38T17PVAZHSXH47B
+  org_id: '3394521'
+  session_name: S2_other_reads_by_url
+  user_name: aayushkhator1994
+  user_email: aayushkhator1994@gmail.com
+environment:
+  model: v16-alpha
+  os: macOS
+  browser: Chrome
+  browser_version: '155'
+  resolution: 1920x1080
+  platform: Desktop
+  platform_type: web
+  run_kind: replay
+  os_version: 27.0.1
+steps:
+  - id: 0-1
+    ordinal: 1
+    status: passed
+    kind: navigate
+    duration_ms: 100
+    action_id: ae035e35-2aa3-4276-9a3d-305f7b35a560
+  - id: 0-2
+    ordinal: 2
+    status: passed
+    kind: wait
+    duration_ms: 1100
+    action_id: 74074e3a-56e8-43d3-975d-8e6b185909ba
+  - id: 0-3
+    ordinal: 3
+    status: passed
+    kind: fill
+    duration_ms: 100
+    action_id: c9cc08bd-e92d-4cee-9560-c0454c5458a4
+  - id: 0-4
+    ordinal: 4
+    status: passed
+    kind: wait
+    duration_ms: 1000
+    action_id: 0f449cb3-13bd-4c22-8e58-bad559a1ce14
+  - id: 0-5
+    ordinal: 5
+    status: passed
+    kind: fill
+    duration_ms: 100
+    action_id: 8fafb906-d5a4-4dbf-9492-7b99724a3588
+  - id: 0-6
+    ordinal: 6
+    status: passed
+    kind: click
+    duration_ms: 600
+    action_id: 8b675c40-a716-4a1a-8617-509a7bfcea31
+  - id: 1-1
+    ordinal: 7
+    status: passed
+    kind: click
+    duration_ms: 600
+    action_id: 92411bf4-0c18-423a-9186-405b8649d4f9
+    verifies: &ref_0
+      - ac-4
+  - id: 1-2
+    ordinal: 8
+    status: passed
+    kind: wait
+    duration_ms: 800
+    action_id: f832a962-5c9f-4692-8ccb-0c13848d8b61
+    verifies: *ref_0
+  - id: 1-3
+    ordinal: 9
+    status: passed
+    kind: analyze
+    duration_ms: 100
+    action_id: ee6ae428-b2e3-4805-9acd-963b7bb3c95a
+    verifies: *ref_0
+  - id: 1-4
+    ordinal: 10
+    status: passed
+    kind: assert
+    duration_ms: 0
+    action_id: ff28500f-afa7-4385-99c2-5cc728f01edd
+    verifies: *ref_0
+  - id: 2-1
+    ordinal: 11
+    status: passed
+    kind: click
+    duration_ms: 600
+    action_id: 2c8f46e6-ddc0-4991-9e16-3497848b9ea4
+  - id: 3-1
+    ordinal: 12
+    status: passed
+    kind: navigate
+    duration_ms: 100
+    action_id: 091cbd5c-d941-422e-9a28-a99fb530dbb2
+  - id: 3-2
+    ordinal: 13
+    status: passed
+    kind: wait
+    duration_ms: 1100
+    action_id: c550e203-e817-450e-bbec-82c68b935b1b
+  - id: 3-3
+    ordinal: 14
+    status: passed
+    kind: fill
+    duration_ms: 100
+    action_id: 0e6f6710-e2d8-4605-b95a-f232eb430904
+  - id: 3-4
+    ordinal: 15
+    status: passed
+    kind: wait
+    duration_ms: 1000
+    action_id: 835eee46-3efa-4bf2-a347-afbf0215172c
+  - id: 3-5
+    ordinal: 16
+    status: passed
+    kind: fill
+    duration_ms: 100
+    action_id: b345cc78-3127-4f9d-bf94-9e179cf8db1e
+  - id: 3-6
+    ordinal: 17
+    status: passed
+    kind: click
+    duration_ms: 600
+    action_id: 077c1692-2bd3-42d6-ba58-0343dd2a9642
+  - id: 4-1
+    ordinal: 18
+    status: passed
+    kind: navigate
+    duration_ms: 100
+    action_id: 56ebd081-776c-4823-ba50-616ef933c27e
+    verifies: &ref_1
+      - ac-1
+      - ac-2
+      - ac-3
+  - id: 4-2
+    ordinal: 19
+    status: passed
+    kind: analyze
+    duration_ms: 11200
+    action_id: 6a1a02f4-1c0a-4719-b983-fa2f45fc161f
+    verifies: *ref_1
+  - id: 4-3
+    ordinal: 20
+    status: passed
+    kind: analyze
+    duration_ms: 6100
+    action_id: 6dde9a80-7560-48cf-900a-ce6b8584726d
+    verifies: *ref_1
+  - id: 4-4
+    ordinal: 21
+    status: passed
+    kind: analyze
+    duration_ms: 5600
+    action_id: 3ab851c2-736f-444c-8f45-b9e6b923553d
+    verifies: *ref_1
+  - id: 4-5
+    ordinal: 22
+    status: failed
+    kind: assert
+    duration_ms: 100
+    action_id: ba6c3381-ea78-4960-9ed2-2bd86baabf40
+    verifies: *ref_1

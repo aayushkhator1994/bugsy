@@ -93,3 +93,15 @@ kanehack status
 | scan (replay, `--skip-design`) | |
 | patch (Codex + two runs) | |
 | self-check | |
+
+## Observed replay limitation and final restored check
+
+See [the live results](e2e-results.md) and `evidence/provenance.json` before repeating paid work. A replay can report S2 `failed` in terminal output but `broken` in the sealed evidence on Kane 0.10.0-rc.3. That is **inconclusive**, even if the screenshot resembles the original leak. Keep the evidence unchanged and report the execution ID to a mentor; do not turn on healing or redesign the test to obtain a green result.
+
+After every self-check, verify the ownership filter was restored and run all three unchanged tests:
+
+```bash
+npx tsx bugsy/src/cli.ts scan --skip-design
+```
+
+This spends Kane credits but makes no additional scenario-generation call. Expect the owner control and both leak checks to pass. Commit only reviewed code/report/evidence paths. Review public content with the owner before pushing; final submission is completed by the owner in the browser.

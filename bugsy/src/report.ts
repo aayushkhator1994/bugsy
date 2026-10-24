@@ -110,7 +110,7 @@ function card(r: StoredReport, scenario: string, verdict: string, ctl: ScenarioO
   const control = ctl
     ? `<div class="ctl">owner control ${esc(sid(ctl.scenario))}: <b>${ctl.verdict === 'control_passed' || ctl.status === 'passed' ? 'passed' : esc(ctl.status)}</b></div>`
     : '';
-  const fixed = f?.patch && f.rerun ? `<div class="fixed">Patched and re-verified</div>` : '';
+  const fixed = f?.patch && ((f as unknown as Loose).verify as Loose | undefined)?.ok === true ? `<div class="fixed">Patched and re-verified</div>` : '';
   return `<div class="vcard ${v.cls}"><div class="sid">${esc(sid(scenario))}</div><div class="vlabel">${esc(v.label)}</div>
 <div class="vtitle">${esc(title)}</div>${reason ? `<div class="vreason">${esc(reason)}</div>` : ''}${control}${fixed}</div>`;
 }
@@ -149,31 +149,32 @@ function fixCard(f: Finding): string {
   const rows = rerunEntries
     .map(([k, val]) => `<tr><td>${esc(k)}</td><td>${pill(isPass(val) ? 'good' : 'bad', isPass(val) ? 'pass' : String(val ?? 'fail'))}</td></tr>`)
     .join('');
-  const verified = ver
+  const verified = ver?.ok === true
     ? `<p class="ok">Re-verified on ${code(short(verCommit))} · Kane execution ${code(String(ver.execution_id ?? ''))}</p>`
-    : f.rerun
-      ? `<p class="ok">Re-verified on ${code(short(p.commit))} · Kane execution ${code(f.rerun.execution_id)}</p>`
+    : ver
+      ? `<p class="badtxt">Commit verification did not pass · Kane execution ${code(String(ver.execution_id ?? ''))}</p>`
       : '<p class="muted">Not re-verified yet.</p>';
   return `<section class="panel"><div class="ph"><h2>The fix</h2>${pill('good', 'Patched by ' + p.patcher)}</div>
 <div class="meta"><span>commit ${code(short(p.commit))}</span><span>files ${p.files.map((x) => code(x)).join(' ')}</span></div>
 ${p.rationale ? `<p class="req">${esc(p.rationale)}</p>` : ''}
 <pre class="diff">${diffBlock(p.diff)}</pre>
-${rows ? `<h3>Rerun</h3><table class="rr"><thead><tr><th>Scenario</th><th>Result</th></tr></thead><tbody>${rows}</tbody></table>` : ''}
+${rows ? `<h3>Rerun</h3><p class="meta">Kane execution ${code(f.rerun?.execution_id)}</p><table class="rr"><thead><tr><th>Scenario</th><th>Result</th></tr></thead><tbody>${rows}</tbody></table>` : ''}
 ${verified}</section>`;
 }
 
 function selfCheckCard(f: Finding): string {
   const sc = f.self_check;
   const ok = sc?.tests_detect_leak === true;
-  const leakStatus = sc ? String((sc as Loose)[sid(f.scenario)] ?? (sc as Loose).status ?? 'failed') : '';
+  const leakStatus = sc ? String((sc as Loose)[sid(f.scenario)] ?? (sc as Loose).status ?? 'inconclusive') : '';
+  const inconclusive = !!sc && !ok && ['inconclusive', 'broken', 'interrupted'].includes(leakStatus);
   const steps = ['Patch reverted', `${sid(f.scenario)} ${leakStatus || 'failed'} again`, 'Patch restored']
     .map((t, i) => `<li><span class="n">${i + 1}</span>${esc(t)}</li>`)
     .join('');
-  return `<section class="panel"><div class="ph"><h2>Does the test actually test?</h2>${sc ? pill(ok ? 'good' : 'bad', ok ? 'Yes' : 'No') : pill('warn', 'Not run yet')}</div>
+  return `<section class="panel"><div class="ph"><h2>Does the test actually test?</h2>${sc ? pill(ok ? 'good' : inconclusive ? 'warn' : 'bad', ok ? 'Yes' : inconclusive ? 'Inconclusive' : 'No') : pill('warn', 'Not run yet')}</div>
 ${
   sc
     ? `<ol class="steps">${steps}</ol>
-<p class="${ok ? 'ok' : 'badtxt'}">${ok ? 'The test fails when the fix is removed, so it really catches this leak.' : 'The test did not detect the leak with the fix removed. Do not trust this test.'}</p>
+<p class="${ok ? 'ok' : 'badtxt'}">${ok ? 'The test fails when the fix is removed, so it really catches this leak.' : inconclusive ? 'The revert proof is inconclusive. The evidence does not establish whether the test detects the leak.' : 'The test did not detect the leak with the fix removed. Do not trust this test.'}</p>
 <div class="meta"><span>tests_detect_leak: <b>${ok ? 'yes' : 'no'}</b></span><span>Kane execution ${code(sc.execution_id)}</span></div>`
     : '<p class="muted">Run <code>bugsy self-check</code> to revert the patch and prove the test fails without it.</p>'
 }</section>`;

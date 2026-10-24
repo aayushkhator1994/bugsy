@@ -25,3 +25,17 @@ test('report round-trips, keeps history, renders self-contained HTML', () => {
   assert.match(html, /green-2/);
   assert.match(html, /class="add">\+new/);
 });
+
+
+test('report labels inconclusive self-check and unsuccessful commit verification honestly', () => {
+  const r = emptyReport();
+  const f = upsertFinding(r, { scenario: 'S2_other_reads_by_url', verdict: 'leak_confirmed', commit: 'aaaaaaa1', kane: { execution_id: 'red' } });
+  f.patch = { commit: 'bbbbbbb2', files: ['app/src/routes/invoices.ts'], diff: '', patcher: 'codex' };
+  f.rerun = { execution_id: 'green', S1: 'passed', S2: 'passed', S3: 'passed' };
+  (f as typeof f & { verify: { execution_id: string; commit: string; ok: boolean } }).verify = { execution_id: 'uncertain', commit: 'bbbbbbb2', ok: false };
+  f.self_check = { execution_id: 'revert', S2: 'inconclusive', tests_detect_leak: false };
+  const html = renderHtml(r, tmpdir());
+  assert.match(html, /The revert proof is inconclusive/);
+  assert.match(html, /Commit verification did not pass/);
+  assert.doesNotMatch(html, /Patched and re-verified|Re-verified on|Do not trust this test/);
+});
