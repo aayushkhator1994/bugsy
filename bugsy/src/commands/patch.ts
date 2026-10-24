@@ -6,7 +6,7 @@ import fg from 'fast-glob';
 import { BugsyError } from '../config.ts';
 import * as git from '../git.ts';
 import { preparedPatch, PREPARED_SCENARIOS } from '../prepared.ts';
-import { executeRun, judgeRun, type Ctx } from '../run.ts';
+import { executeRun, judgeRun, scopeScenarios, type Ctx } from '../run.ts';
 import { getFinding, loadReport, pushHistory, saveReport, writeHtml } from '../report.ts';
 import { patchMayCommit } from '../verdict.ts';
 import { formatOutcome } from './scan.ts';
@@ -64,6 +64,9 @@ export async function patch(ctx: Ctx, scenarioId: string, o: PatchOptions): Prom
   }
   const scenarios = report.scenarios?.length ? report.scenarios : PREPARED_SCENARIOS;
   const scenario = scenarios.find((s) => s.id === scenarioId);
+  const scope = scopeScenarios(scenarios, ctx.only);
+  if (ctx.only && !scope.some((s) => s.id === scenarioId)) throw new BugsyError(`--only ${ctx.only.join(',')} does not include ${scenarioId}`);
+  const runScope = ctx.only ? scope : undefined;
   if (!scenario) throw new BugsyError(`scenario ${scenarioId} not found`);
 
   const A = await git.headSha(ctx.root);
@@ -102,8 +105,8 @@ export async function patch(ctx: Ctx, scenarioId: string, o: PatchOptions): Prom
   let committed = false;
   try {
     ctx.log('  patch applied; restarting the app and rerunning the same tests…');
-    const run = await executeRun(ctx, { phase: 'patch', sha: A, label: `bugsy:patch ${scenarioId} on ${git.short(A)}+patch` });
-    const { outcomes } = judgeRun(ctx, run, scenarios);
+    const run = await executeRun(ctx, { phase: 'patch', sha: A, label: `bugsy:patch ${scenarioId} on ${git.short(A)}+patch`, scope: runScope });
+    const { outcomes } = judgeRun(ctx, run, scope);
     const rerun: Record<string, string | null> & { execution_id: string | null } = { execution_id: run.execution_id };
     for (const oc of outcomes) rerun[oc.scenario.split('_')[0]!] = oc.status;
 
@@ -121,8 +124,8 @@ export async function patch(ctx: Ctx, scenarioId: string, o: PatchOptions): Prom
       // The hub counts "fix re-verified" only from a passing run on a different commit than the
       // failing one. The green run above happened on A+patch (dirty tree), so run once more at B.
       ctx.log(`  re-verifying on the committed fix ${git.short(B)}…`);
-      const verify = await executeRun(ctx, { phase: 'verify', sha: B, label: `bugsy:verify ${scenarioId} on ${git.short(B)}` });
-      const verdict = judgeRun(ctx, verify, scenarios);
+      const verify = await executeRun(ctx, { phase: 'verify', sha: B, label: `bugsy:verify ${scenarioId} on ${git.short(B)}`, scope: runScope });
+      const verdict = judgeRun(ctx, verify, scope);
       for (const oc of verdict.outcomes) say(formatOutcome(oc));
       (finding as { verify?: unknown }).verify = { commit: B, execution_id: verify.execution_id, ok: patchMayCommit(verdict.outcomes) };
       pushHistory(report, {

@@ -1,6 +1,7 @@
 // One Kane pass: start the app → testrun → stop the app (always), then judge from the evidence pack.
 import { existsSync, readFileSync } from 'node:fs';
 import { basename, resolve } from 'node:path';
+import { BugsyError } from './config.ts';
 import { startApp } from './app-runner.ts';
 import { runTestrun, type TestrunState } from './kane.ts';
 import { exportEvidence, parseTestSteps, type ExportResult } from './evidence.ts';
@@ -14,14 +15,27 @@ export interface Ctx {
   report: boolean;
   json: boolean;
   log: (msg: string) => void;
+  /** --only: scenario ids or S-labels (e.g. S2); each brings its owner control along */
+  only?: string[];
+}
+
+/** The scenarios in scope for --only: the named ones plus their controls. No --only means all. */
+export function scopeScenarios(all: Scenario[], only?: string[]): Scenario[] {
+  if (!only?.length) return all;
+  const want = (s: Scenario) => only.some((o) => s.id.toLowerCase() === o.toLowerCase() || s.id.toUpperCase().startsWith(o.toUpperCase() + '_'));
+  const picked = all.filter(want);
+  if (!picked.length) throw new BugsyError(`--only ${only.join(',')} matches no scenario (have: ${all.map((s) => s.id).join(', ')})`);
+  const ids = new Set(picked.flatMap((s) => (s.control_id ? [s.id, s.control_id] : [s.id])));
+  return all.filter((s) => ids.has(s.id));
 }
 
 export type RunResult = KaneRunResult & { state: TestrunState; wrapped: boolean };
 
 export async function executeRun(
   ctx: Ctx,
-  o: { phase: string; sha: string; label?: string; match?: string },
+  o: { phase: string; sha: string; label?: string; match?: string; scope?: Scenario[] },
 ): Promise<RunResult> {
+  const match = o.match ?? (o.scope ? matchFor(o.scope.map((s) => s.id)) : undefined);
   const app = await startApp(ctx.cfg, ctx.root);
   ctx.log(`  app up at ${app.url} (pid ${app.pid})`);
   try {
@@ -31,7 +45,7 @@ export async function executeRun(
         testsDir: ctx.cfg.tests_dir,
         phase: o.phase,
         sha: o.sha,
-        match: o.match,
+        match,
         label: o.label,
         report: ctx.report,
         cwd: ctx.root,

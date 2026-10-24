@@ -4,7 +4,7 @@ import { dirname, resolve } from 'node:path';
 import { headSha, short } from '../git.ts';
 import { designFromScenarios } from '../design.ts';
 import { copyPreparedTests, hasPreparedTests, PREPARED_SCENARIOS } from '../prepared.ts';
-import { executeRun, judgeRun, type Ctx } from '../run.ts';
+import { executeRun, judgeRun, scopeScenarios, type Ctx } from '../run.ts';
 import { loadReport, pushHistory, saveReport, upsertFinding, writeHtml } from '../report.ts';
 import { BugsyError } from '../config.ts';
 import type { Scenario, ScenarioOutcome } from '../types.ts';
@@ -86,7 +86,7 @@ export async function scan(ctx: Ctx, o: ScanOptions): Promise<number> {
     console.error('USING PREPARED TESTS (fixtures/prepared/tests/authz/)');
     usedPrepared = true;
   } else if (o.skipDesign) {
-    if (!testsPresent(ctx, scenarios)) throw new BugsyError(`--skip-design: ${ctx.cfg.tests_dir} lacks a test per scenario`);
+    if (!testsPresent(ctx, scopeScenarios(scenarios, ctx.only))) throw new BugsyError(`--skip-design: ${ctx.cfg.tests_dir} lacks a test per scenario`);
     ctx.log(`  tests: using existing ${ctx.cfg.tests_dir}`);
   } else {
     const d = await designFromScenarios({
@@ -106,8 +106,10 @@ export async function scan(ctx: Ctx, o: ScanOptions): Promise<number> {
 
   // ---- run
   const sha = await headSha(ctx.root);
-  const run = await executeRun(ctx, { phase: 'scan', sha, label: `bugsy:scan @ ${short(sha)}` });
-  const { outcomes, exported } = judgeRun(ctx, run, scenarios);
+  const scope = scopeScenarios(scenarios, ctx.only);
+  if (ctx.only) ctx.log(`  --only: ${scope.map((x) => x.id).join(', ')}`);
+  const run = await executeRun(ctx, { phase: 'scan', sha, label: `bugsy:scan @ ${short(sha)}`, scope: ctx.only ? scope : undefined });
+  const { outcomes, exported } = judgeRun(ctx, run, scope);
 
   // ---- report
   for (const oc of outcomes) {
