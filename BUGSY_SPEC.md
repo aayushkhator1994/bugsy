@@ -1,96 +1,79 @@
-# Bugsy — Final Spec (v1, supersedes BUGSY_PLAN.md)
+# Bugsy — Spec v2 (security seatbelt)
 
-> **Bugsy checks whether your AI-generated browser tests would notice a realistic bug, then turns each miss into a requirement and a verified Kane test.**
+> **Bugsy is a security seatbelt for vibe-coded apps.** You give it an app, two test accounts and one sentence about who owns what. OpenAI turns that into authorization scenarios, Kane CLI reproduces the cross-user leak in a real browser, Codex patches the ownership check, Kane reruns the same scenarios to prove the fix, and then Bugsy reverts the patch to prove the tests would catch the leak again.
 
-Status: reviewed against the Codex brief (`BUGSY_REVIEW.md`), the installed Kane CLI 0.10.0 skill docs, and the event's own `hack-os` / `hack-gtm` skills and `kanehack` helper (v0.1.28, sha256-verified). §0 is what the hub measures; §1 records what changed and why. Everything after is the build contract.
+Status: v2 adopts `docs/change-recommendations.md` (the pivot from mutation testing to the two-account security story), with three additions that carry the originality points (§2). v1 (mutation matrix) is kept as the closing self-check, not the product. Everything after §0 is the build contract; the coding-agent handoff is §16.
 
 ---
 
-## 0. Event hub compliance — what actually gets measured
+## 0. Event hub compliance (unchanged, and it fits v2 better)
 
-Read from the `kanehack` source and the `hack-os` skill. These are rules, not suggestions.
+Every Kane command that should count runs through `kanehack report --objective "<label>" -- kane-cli …`. Exit code decides (0 pass, 1 fail, 2 nothing ran, 3 timeout); no completion event, no pass; verified only from a paired machine with a committed tree. A failing run opens a **suspected defect**; a teammate confirms it; a passing run **on a different commit** re-verifies the fix.
 
-**How a run becomes "source-verified" on the Proof tab.** Every Kane command that should count is run through the wrapper:
-```bash
-kanehack report --objective "bugsy:<mutant>" -- kane-cli testrun run tests/ --parallel 1 --no-adaptive-heal --bug-detection off --agent
-```
-`kanehack report` streams Kane's stdout through untouched (our NDJSON parser still works), keeps Kane's exit code, and sends a *redacted* copy of the stream plus `git rev-parse HEAD`. Then the server decides:
-- **Exit code decides:** `0` passed, `1` failed, `2` nothing ran, `3` timed out. A run with **no completion event** (`run_end` / `test_md_done` / `testrun_done`) is never a pass.
-- **Verified** only if: paired token + own team's project + completion event and exit code agree.
-- A failing run opens a **suspected defect**. A teammate **confirms** it. A later **passing run on a different commit** re-verifies the fix. Those are the five Proof counters: runs reported · verified passes · suspected defects · confirmed open · fixes re-verified.
-- `kanehack report` warns when the tree is dirty ("run is tied to HEAD, which isn't exactly what ran"). **Commit before the runs that matter.**
+v2 maps onto that exactly, because the fix is now a real code change:
 
-**Mapping Bugsy onto those counters** (so the hub sees the story, not just exit codes):
-
-| Bugsy event | Kane exit | Hub counter | Action |
+| Bugsy step | Commit | Kane exit | Hub counter |
 |---|---|---|---|
-| Baseline suite on clean app | 0 | verified pass | report it |
-| Suite on a mutant, *survived* | 0 | verified pass (!) | report it; the objective text says `bugsy:leak_cross_tenant survived` — this is the talking point: a green verified run on a leaking app |
-| Suite on a mutant, *caught* | 1 | suspected defect | report it; a teammate confirms it in the hub ("planted: <mutant>") |
-| New test from `fix`, red on mutant | 1 | suspected defect | report, confirm |
-| After `fix` commits, suite green on clean at the **new SHA** | 0 | **fix re-verified** | report it — this run exists only so the hub can close the loop; it's a cheap cached replay |
-| A *real* bug in Ledger found by the first suite run | 1 | suspected defect → fixed → re-verified | **don't hide it.** Report, fix the app, commit, rerun. This is the cleanest "proof not presence" evidence we can get, and it's honest |
+| Owner-control scenario passes on the vulnerable app | A | 0 | verified pass |
+| Leak scenario fails on the vulnerable app | A | 1 | **suspected defect** → you confirm: "cross-tenant invoice read" |
+| Codex patch applied, same scenarios rerun | **B** | 0 | **fix re-verified** |
+| Self-check: patch reverted, leak scenario fails again | B (dirty, or temp commit) | 1 | reported with label `bugsy:self-check (leak reintroduced on purpose)`; confirm as self-check, or skip reporting with `--no-report` |
 
-**Setup, once, in your own terminal (not from an agent):** `curl -fsSL https://kaneclihack.sh/install.sh | sh` (read: never sudo, asks before each install; it also installs Codex CLI and the `hack-os` skill into `~/.agents/skills`), then `kanehack pair`, then `kanehack consent yes` (nothing is sent without it). `kanehack status` lists reported runs as `KR-<n>`.
-
-**Evidence packs are never committed to the public repo.** `hack-gtm` non-negotiable #8: packs hold HAR/console logs with cookies, tokens and test passwords; the hub itself refuses to publish `.evidence`, `.zip`, `.har`. The rubric's "evidence pack in the repo" is satisfied by a **redacted export** (`evidence/<exec_id>/`: `run.yaml`, `result.yaml`, `failure.yaml`, step screenshots — no HAR, no console logs) plus the Kane report link in README. Full packs go to the hub: `kanehack report --evidence <pack>` (≤ 4 MB) or the Proof tab upload (matched by sha256). `.gitignore` ignores `.testmuai/` entirely.
-
-**What `submission_preflight` requires to finalize:** project name + type, one-line pitch, repo URL, **exact commit SHA**, live URL *or run command*, at least one **linked** Kane run (reported runs must be ticked on the Submit tab or sent via `team_page_update.kane_run_ids`), harness description, Kane components used (tick boxes), known limitations. Deck and video are not required to finalize but the **shipped prize** needs the three essentials plus any two of video / blog / X / Show HN, each as a live link, saved on the Submit tab by 18:00 before the captain finalizes.
-
-**Wording rules from `hack-gtm`:** "built with OpenAI, tested with Kane CLI"; never "in partnership with OpenAI"; the event is "Kane CLI Hack Day". X: `@testmuai` and `@OpenAI`; LinkedIn: company page *TestMu AI*. Kane CLI has no own account. Every Kane claim must trace to a real run. The person posts everything themselves.
+Rules that still apply: `.evidence` packs never go in the repo (redacted exports in `evidence/`, full packs to the hub); `kanehack pair` + `consent yes` once; commit before runs that matter; Submit tab needs exact SHA, run command, linked runs, harness description, Kane components, known limitations; "built with OpenAI, tested with Kane CLI", never "in partnership"; `@testmuai` `@OpenAI` on X, company page *TestMu AI* on LinkedIn, `#KaneCLIHackDay`.
 
 ---
 
-## 1. Review verdict on the Codex brief
+## 1. The story, with a person in it
 
-**Recommendation: build, with the brief's scope cut adopted.** The brief is right on the points that matter: the original plan equated "any failure" with "caught", shared one database across parallel tests, ran clean and mutant with different healing settings, and overclaimed novelty. Those are fixed below. The brief is wrong, or over-cautious, in a few places, also noted.
+**Alice** is a freelancer using Ledger to invoice her clients. **Bob** is another Ledger user. Ledger was built in an afternoon with a coding agent from a short PRD. The PRD never said "a user must not see another user's invoices", so the agent never wrote the check, and nobody tested it. Alice can type `/invoices/4` and read Bob's $4,000 invoice to Umbrella.
 
-| Brief point | Verdict | What the spec does |
-|---|---|---|
-| Any non-zero exit ≠ caught; need an attribution rule | **Accept — blocker.** | §7: verdict comes from Kane's per-test `status` and the failing step, not the exit code. Verified: `testrun_member_end` carries `status ∈ passed\|failed\|broken\|interrupted` and `failure.step_index`. |
-| Parallel tests share state and break exact-total assertions | **Accept — blocker.** | §7: `--parallel 1` for all measurement runs; app restarted with fresh seed before every experiment. |
-| Clean and mutant must use identical runner settings (healing off on both) | **Accept.** | §10: `--no-adaptive-heal` on *every* measurement run. Healing re-authors a failing step up to 3 times and could author around a mutation. |
-| Separate "mutation is active" probe from suite execution | **Accept.** | §9 `bugsy probe`: an HTTP check that shows clean denies / mutant leaks. Not counted as a test. It's also the "Alice sees Bob's invoice" moment in the demo. |
-| Cut to 3 mutations; defer OpenAI patches, worktrees, narrative, parallelism | **Accept, with one tweak.** | 3 mutants in the default matrix. Two more stay in the app behind the same env flag (they cost ~15 lines each, not Kane credits) and are opt-in via `--mutants`. OpenAI patches/worktrees are **out**. |
-| Don't promise "2/6"; disclose that the PRD omits tenant isolation | **Accept.** | §12: the spec-gap is *the story* ("the PRD never said it, the agent never tested it"), stated out loud. No predicted score in any public text. |
-| Drop "no prior art" (Mutta exists for E2E web mutation testing) | **Accept.** | §15: positioning is "first mutation harness for AI-generated Kane suites with a requirement→test repair loop". |
-| HN/Lovable figures unverified | **Partly accept.** | The HN numbers came from the HN API this morning; the Lovable figure is from a secondary blog. Public text links the threads and says "reported", never quotes a number as fact. |
-| Build-step inconsistency, `cart_total` naming, `git add -A` | **Accept.** | Run with `tsx`, no build. Mutant renamed `total_off_by_one` with one definition. `fix` stages only the files it created. |
-| "Keep OpenAI central through gap analysis only; review whether sufficient" | **Not sufficient alone; add one more call site.** | §11: OpenAI (1) does gap analysis → requirement, (2) explains each *caught* failure in one line from `failure.yaml`. Both are substantive; neither decides a verdict. |
-| Brief's `Inconclusive`/`Invalid` verdict classes | **Accept, simplified.** | §7 keeps four verdicts; `invalid` is detected by the probe, `inconclusive` by Kane status `broken`/`interrupted` or a failure at step 0 (never reached the app). |
+Bugsy's job: find that before Bob does, fix it, prove the fix, and prove the proof.
 
-**Risks the brief missed** (all handled in §14): Kane's Test Manager project must be configured before `testrun` (otherwise an auto-default event, or exit 2 in a linked folder); the designed negative test must be *authored on the clean app* so its recording captures "Not found" — authoring it on the mutant would record the leak as expected behaviour; `design tests` can emit more tests than you want (`--max 1`); `--bug-detection` must be `off` so authoring doesn't halt on a "suspected product bug".
+1. **Rule.** You tell Bugsy one sentence: *Alice owns invoices 1–3, Bob owns 4–6, nobody sees anyone else's.*
+2. **Scenarios.** OpenAI turns the rule and the app's routes into concrete two-account scenarios, each with a control.
+3. **Leak.** Kane signs in as Bob, opens his invoice, signs out, signs in as Alice, opens the same URL, and expects *Invoice not found*. It sees Umbrella instead. Red, with a screenshot of Alice's browser showing Bob's invoice.
+4. **Patch.** Codex reads Kane's failure and the route source and adds the ownership check on the server. Bugsy applies it, restarts, reruns the *same* scenarios. Alice is denied; Alice can still open her own invoice. Green. Commit.
+5. **Self-check.** Bugsy reverts the patch and reruns. Red again. The tests detect the leak; they are not decorative. Restore.
 
 ---
 
-## 2. What Bugsy is (plain language)
+## 2. Where the originality points come from
 
-- **Mutation testing** is a 50-year-old idea: deliberately break the program in one small way (a *mutant*), run the tests, and see if any test fails. If none does, the mutant *survived* — your tests wouldn't have noticed that bug. The fraction caught is the *mutation score*.
-- It has always been done on unit tests. **Bugsy does it on AI-driven browser tests** (Kane CLI `_test.md` files, executed in a real Chrome).
-- The twist for the AI era: when a mutant survives, it's usually because **the requirement was never written down**, so the agent never tested it. Bugsy uses OpenAI to name the missing requirement, then uses Kane's own assurance flow (requirement → use-case → designed test) to generate the test, and proves it: green on the clean app, red on the mutant.
+"Browser-based IDOR check" alone is mid-band: scanners exist, KaneAI has a PR beta. Three things in v2 are not shipping anywhere we could find, and the pitch leads with them:
 
-What it is **not**: a security scanner, a proof the app is correct, or a general tool for any app today. It measures the suite's sensitivity to a chosen set of realistic bugs.
+1. **Spec-driven, not payload-driven.** The input is an *ownership rule in plain English*, not a vulnerability list. OpenAI derives the scenario matrix (read by URL, list isolation, later write) from the rule and the routes it can see. Every scenario is a readable requirement before it is a test.
+2. **Every denial is paired with an owner control.** A scenario is only "secure" if the other user is denied **and** the owner still gets in. A patch that breaks the app ("deny everyone") fails the control. Scanners don't do this; they only look for the leak.
+3. **The seatbelt checks itself.** After the patch, Bugsy reverts it and reruns. If the scenarios don't go red, they weren't testing anything. No security tool in the room proves its own tests. (This is the one useful minute of v1's mutation testing.)
+
+Plus the Kane-specific angle the rubric names explicitly: **Kane is the eyes of the patching agent.** Codex fixes from what the browser saw (Kane's failure record and screenshot), not from an HTTP response.
+
+Say these three in the deck, the demo close, the Show HN first comment, and the README's first paragraph.
 
 ---
 
 ## 3. Scope
 
-### MVP (must exist by 4:00 pm)
-1. **Ledger**: a 4-page invoices app with two seeded users and a mutant switch.
-2. **Three mutants** in the default matrix: `leak_cross_tenant`, `pay_no_persist`, `total_off_by_one`.
-3. **A Kane suite** of 3–4 tests designed from `requirements/ledger-prd.md` via Kane's assurance commands, authored once on the clean app, recordings committed.
-4. **`bugsy run`**: clean baseline + each mutant, sequential, fresh app per experiment, verdicts from Kane evidence, `bugsy.report.json` + `report.html`.
-5. **`bugsy probe <mutant>`**: proves the mutant is live (clean denies, mutant leaks).
-6. **`bugsy fix <mutant>`**: OpenAI gap analysis → requirement addendum → Kane designs the test → authored on clean (green) → run on mutant (red) → commit.
-7. README with one run command; **redacted** evidence exports committed (§0), full packs uploaded to the hub.
+### MVP (must exist by 16:00)
+1. **Ledger** at commit A: the PRD app, with `GET /invoices/:id` missing the owner check. No `BUG` switch; git is the fixture.
+2. **`bugsy scan`**: config → OpenAI scenarios → Kane assurance flow designs the tests → `testrun run` → per-scenario verdicts → `bugsy.report.json` + `report.html`.
+3. **`bugsy patch`**: failing scenario + Kane evidence + route source → Codex (or the Responses API) → server-side patch → apply, restart, rerun the unchanged scenarios → commit on green.
+4. **`bugsy self-check`**: revert the patch, rerun the leak scenario, expect red, restore.
+5. README, redacted evidence exports, hub runs linked.
 
-### Opt-in if the loop is stable by 2:30
-- Mutants 4–5 (`validation_inverted`, `login_any_password`) via `--mutants all`.
-- OpenAI one-line explanations of caught failures in the report.
-- Coverage panel: Kane's own coverage figure (read-only projects API, §5) beside the catch rate.
+### Scenarios in the MVP
+| id | Role | What Kane does | Expected |
+|---|---|---|---|
+| `S1_owner_reads_own` | **control** | Sign in as Alice, open `/invoices/3` | heading `Invoice #3`, `Client: Initech` |
+| `S2_other_reads_by_url` | **leak check** | Sign in as Bob, open `/invoices/4`, note `Umbrella`; sign out; sign in as Alice, open `/invoices/4` | page shows `Invoice not found`; `Umbrella` and `$4,000.00` absent |
+| `S3_list_isolation` | leak check | Sign in as Alice, open `/invoices` | rows for Acme Co, Globex, Initech only; no Umbrella, Hooli, Vandelay |
 
-### Deferred (not today)
-OpenAI-generated source patches, git worktrees, arbitrary-app support, parallel execution, AI narrative, Linear/GitHub issue filing.
+### Opt-in after C3
+- `S4_other_marks_paid`: Alice POSTs to `/invoices/4/pay`; denied **and** Bob's invoice still `Unpaid` (verified in Bob's session).
+- OpenAI one-line explanation of each finding from `failure.yaml`.
+- Coverage panel from Kane's projects API.
+
+### Deferred
+Arbitrary-app support, parallel runs, write scenarios beyond S4, multiple tenants, v1's full mutation matrix.
 
 ---
 
@@ -98,15 +81,14 @@ OpenAI-generated source patches, git worktrees, arbitrary-app support, parallel 
 
 | Layer | Choice | Why |
 |---|---|---|
-| Language/runtime | TypeScript on Node 20, run with `tsx` (no build step) | One toolchain, zero compile loop, agents already know it |
-| Demo app | Express 4 + EJS views + `better-sqlite3` (in-memory) + `express-session` | Server-rendered HTML with stable text = crisp Kane assertions; in-memory DB reseeds on every boot, which is the fixture reset |
-| CLI | `commander`, `execa` (spawn), `yaml`, `adm-zip` (read `.evidence`), `zod` (schemas) | Small, boring, fast to wire |
-| Test runner | **Kane CLI 0.10.0** — `context ingest`, `context review`, `design tests`, `testrun run`, evidence packs | The grader. Verified commands/flags in §10 |
-| LLM | **OpenAI Responses API**, `openai` npm, strict JSON-schema outputs, model from `OPENAI_MODEL` | The gate; structured outputs keep it deterministic enough to drive a CLI |
-| Report | Self-contained `report.html` (inline CSS, no framework) + `bugsy.report.json` | Opens from disk at the judges' table |
-| Repo | GitHub public `aayushkhator1994/bugsy`, npm workspaces `app/` + `bugsy/` | Already created |
-
-Secrets: `OPENAI_API_KEY` from `.env` (gitignored). Kane auth via `kane-cli login --oauth` (stored by Kane, not in repo).
+| Runtime | TypeScript on Node 20 via `tsx` | No build step |
+| Demo app | Express 4 + EJS + better-sqlite3 (in memory) + express-session | Server-rendered, exact strings, reseeds on boot |
+| CLI | commander, execa, yaml, adm-zip, zod | Small and boring |
+| Scenario generation | **OpenAI Responses API**, strict JSON schema, `OPENAI_MODEL` from `.env` | The gate; output is a requirements doc Kane can ingest |
+| Patching | **Codex CLI** (`codex exec`, non-interactive) by default; `--patcher api` falls back to a Responses call that returns a unified diff | Codex is in the room; both are OpenAI |
+| Tests | **Kane CLI 0.10.0**: `context ingest` → `context review` → `design tests` → `testrun run`; evidence packs | Grader and eyes |
+| Hub | `kanehack report` wrapper | Verified runs |
+| Report | `bugsy.report.json` + self-contained `report.html` | Opens from disk |
 
 ---
 
@@ -114,323 +96,250 @@ Secrets: `OPENAI_API_KEY` from `.env` (gitignored). Kane auth via `kane-cli logi
 
 ```mermaid
 flowchart LR
-  subgraph CLI["bugsy (TypeScript CLI)"]
-    RUN[bugsy run]
-    PROBE[bugsy probe]
-    FIX[bugsy fix]
-    REPORT[bugsy report]
+  subgraph in["Inputs"]
+    CFG["bugsy.config.json<br/>app URL · Alice/Bob creds ·<br/>ownership rule · routes"]
   end
-
-  subgraph APP["Ledger demo app (Express + SQLite, port 3000)"]
-    SW{{"BUG env switch<br/>none | leak_cross_tenant | pay_no_persist | total_off_by_one"}}
-    H[/health -> bug id/]
+  subgraph cli["bugsy (TypeScript CLI)"]
+    SCAN[bugsy scan]
+    PATCH[bugsy patch]
+    SELF[bugsy self-check]
+    REP[bugsy report]
   end
-
-  subgraph KANE["Kane CLI 0.10.0"]
-    TR[testrun run<br/>--parallel 1 --no-adaptive-heal --agent]
-    DS[context ingest -> review -> design tests]
-    EV[(.testmuai/evidence/*.evidence<br/>result.yaml, failure.yaml, screenshots)]
+  subgraph oai["OpenAI"]
+    GEN["Responses API:<br/>rule + routes → scenarios<br/>(requirements/authz-scenarios.md)"]
+    CDX["Codex CLI:<br/>Kane failure + route source<br/>→ server-side patch"]
   end
-
-  subgraph OAI["OpenAI Responses API"]
-    GAP[gap analysis -> requirement addendum]
-    EXP[explain caught failure]
+  subgraph kane["Kane CLI"]
+    DS["context ingest → design tests<br/>→ tests/authz/*_test.md"]
+    TR["testrun run (real Chrome,<br/>Bob's session then Alice's)"]
+    EV[("evidence pack:<br/>status per scenario,<br/>failure.yaml, screenshots")]
   end
-
-  RUN -- "start app (BUG=id), wait /health" --> APP
-  RUN -- "run frozen suite" --> TR
-  TR -- "seals pack" --> EV
-  RUN -- "read verdicts" --> EV
-  RUN --> REPORT
-  PROBE -- "HTTP as Alice: GET /invoices/4" --> APP
-  FIX -- "mutant + PRD + tests + evidence" --> GAP
-  GAP -- "requirements/addendum-*.md" --> DS
-  DS -- "tests/<new>_test.md" --> FIX
-  FIX -- "author on clean, run on mutant" --> TR
-  EV -. "failure.yaml" .-> EXP
-  EXP -. "one line" .-> REPORT
+  subgraph app["Ledger"]
+    A["commit A: vulnerable"]
+    B["commit B: patched"]
+  end
+  CFG --> SCAN --> GEN --> DS --> TR --> EV --> SCAN
+  SCAN -->|leak_confirmed| PATCH
+  EV --> CDX
+  PATCH --> CDX -->|diff| B
+  A -.-> TR
+  B --> PATCH -->|rerun same scenarios| TR
+  PATCH -->|green| SELF -->|revert, rerun, expect red, restore| TR
+  SCAN & PATCH & SELF --> REP
 ```
 
-### The fix loop, step by step
+### The loop, step by step
 
 ```mermaid
 sequenceDiagram
   participant U as You
-  participant B as bugsy fix
+  participant B as bugsy
   participant O as OpenAI
   participant K as Kane CLI
-  participant A as Ledger app
-  U->>B: bugsy fix leak_cross_tenant
-  B->>O: mutant desc + PRD + existing tests + survived-run evidence
-  O-->>B: {missing_requirement, addendum_markdown, test_hint}
-  B->>B: write requirements/addendum-leak_cross_tenant.md
-  B->>K: context ingest addendum --mode agent
-  K-->>B: new use-case id
-  B->>K: context review --approve <uc>
-  B->>K: design tests --use-case <uc> --mode agent --max 1
-  K-->>B: tests/tenant_isolation_test.md
-  B->>A: start BUG=none
-  B->>K: testrun run tests/tenant_isolation_test.md (authors + records)
-  K-->>B: passed (exec id G)
-  B->>A: restart BUG=leak_cross_tenant
-  B->>K: testrun run tests/tenant_isolation_test.md --no-adaptive-heal (via kanehack report)
-  K-->>B: failed at assertion step (exec id R) -> hub: suspected defect
-  B->>B: git add addendum + test + recordings; commit "catch leak_cross_tenant — Kane G green / R red"
-  B->>A: restart BUG=none
-  B->>K: testrun run tests/ (cached replay, via kanehack report, at the new SHA)
-  K-->>B: passed (exec id V) -> hub: fix re-verified
-  B-->>U: before/after row
+  participant L as Ledger
+  participant H as Hub
+  U->>B: bugsy scan
+  B->>O: ownership rule + routes + accounts
+  O-->>B: scenarios S1–S3 as a requirements doc
+  B->>K: context ingest → review → design tests
+  K-->>B: tests/authz/S1,S2,S3_test.md
+  B->>L: start (commit A, vulnerable)
+  B->>K: testrun run tests/authz (via kanehack report)
+  K-->>H: S1 passed, S2 failed at "Invoice not found", S3 passed
+  B-->>U: S2 leak_confirmed (screenshot: Alice sees Umbrella)
+  U->>B: bugsy patch S2
+  B->>O: Codex: failure.yaml + screenshot + routes/invoices.ts
+  O-->>B: diff: add owner_id check, 404 otherwise
+  B->>B: git apply, commit B "fix(authz): …"
+  B->>L: restart (commit B)
+  B->>K: testrun run tests/authz (same files)
+  K-->>H: S1, S2, S3 passed → fix re-verified
+  U->>B: bugsy self-check
+  B->>B: git revert --no-commit B
+  B->>L: restart
+  B->>K: testrun run S2
+  K-->>B: failed → tests detect the leak
+  B->>B: git checkout -- . (restore B)
+  B-->>U: report: finding, patch, before/after run ids, self-check
 ```
 
-Every Kane call above goes through `kanehack report` when `KANEHACK=1` (default once paired), so the hub sees G as a verified pass, R as a suspected defect, and V as the re-verification on a new commit.
-
-### Component responsibilities
+### Components
 
 | Component | File | Does | Does not |
 |---|---|---|---|
-| App runner | `bugsy/src/app-runner.ts` | Spawns `tsx app/src/server.ts` with `BUG`, `PORT`; polls `/health` until `bug` matches (15 s); kills on exit/error; refuses to start if port busy and reports the PID | Reuse a running app |
-| Kane adapter | `bugsy/src/kane.ts` | Spawns `kanehack report --objective <label> -- kane-cli …` (or bare `kane-cli` when `KANEHACK=0`) with `KANE_CLI_USER_AGENT=bugsy`, stdin `/dev/null`; parses NDJSON, ignoring unknown event types including the trailing `kanehack_report` line; returns `{execution_id, members[], summary, pack_path, exit_code, kanehack_run_id?}` | Interpret verdicts |
-| Evidence reader | `bugsy/src/evidence.ts` | Opens `.evidence` zip; reads `tests/*/result.yaml`, `steps/*/failure.yaml`; writes the **redacted export** `evidence/<exec_id>/` (run.yaml, result.yaml, failure.yaml, screenshots only) and copies failing-step screenshots to `report-assets/` | Copy HAR or console logs anywhere; modify packs |
-| Coverage panel (opt-in) | `bugsy/src/coverage.ts` | `GET https://kaneai-api.lambdatest.com/v16-lattice/v1/projects/{id}/coverage` with `LT_USERNAME`/`LT_ACCESS_KEY` basic auth from env, cached 5 min, shown next to the catch rate: *"Kane coverage 100% · Bugsy catch rate 33%"* — the thesis in one line | Run in the browser; log the key |
-| Verdict engine | `bugsy/src/verdict.ts` | Applies §7 rules to produce `caught\|survived\|inconclusive\|invalid` | Call OpenAI |
-| Probe | `bugsy/src/probe.ts` | Logs in as Alice over HTTP, GETs Bob's invoice, records status + whether Bob's client name appears | Count as a test |
-| OpenAI client | `bugsy/src/openai.ts` | Two schema-bound calls; logs prompt/response to `bugsy/.calls/<ts>-<kind>.json` with key never present | Decide verdicts |
-| Fix | `bugsy/src/fix.ts` | The sequence above; stages only files it wrote | `git add -A` |
-| Report | `bugsy/src/report.ts` | JSON + HTML; keeps `history[]` of runs with suite hash | Recompute aggregates across different suite versions |
+| Config | `bugsy.config.json` | `app.start`, `app.url`, `accounts.{alice,bob}`, `ownership_rule`, `routes[]`, `source_globs` | Hold the OpenAI key |
+| Scenario generator | `bugsy/src/scenarios.ts` | Responses call → `requirements/authz-scenarios.md` (rule, then one scenario per section with accounts, steps, expected text, and its paired control) | Write `_test.md` by hand |
+| Kane adapter | `bugsy/src/kane.ts` | assurance flow with pause handling; `testrun run tests/authz --parallel 1 --no-adaptive-heal --bug-detection off --agent` through `kanehack report`; parses NDJSON; locates the pack | Interpret verdicts |
+| Evidence reader | `bugsy/src/evidence.ts` | result.yaml, failure.yaml, screenshots → redacted export `evidence/<exec_id>/` | Copy HAR or console logs |
+| Verdicts | `bugsy/src/verdict.ts` | §7 rules per scenario | Call OpenAI |
+| Patcher | `bugsy/src/patch.ts` | Builds the Codex prompt from failure + source; runs `codex exec` in `app/`; validates `git apply --check`; applies; restarts; reruns; commits only the files the diff touched | `git add -A`; patch tests; patch anything outside `app/src` |
+| Self-check | `bugsy/src/selfcheck.ts` | `git revert --no-commit <B>` → restart → run S2 → expect `failed` → `git checkout -- .` | Leave the tree reverted on error (always restores in `finally`) |
+| Report | `bugsy/src/report.ts` | Findings table, evidence links, patch diff, run ids, self-check line, `history[]` | Recompute aggregates across code revisions |
 
 ---
 
 ## 6. Ledger demo app
 
-**Fixtures (deterministic, reseeded on every boot):**
+Fixtures, routes and strings as in `requirements/ledger-prd.md` (unchanged, still silent on tenant isolation; that silence is the story). Two things specific to v2:
 
-| User | Password | Invoices (id, client, amount, status) |
-|---|---|---|
-| alice@ledger.test | alice123 | 1 Acme Co $1,200.00 Unpaid · 2 Globex $350.50 Paid · 3 Initech $89.99 Unpaid |
-| bob@ledger.test | bob123 | 4 Umbrella $4,000.00 Unpaid · 5 Hooli $75.00 Unpaid · 6 Vandelay $999.00 Paid |
-
-Alice's **Total outstanding = $1,289.99** (1 + 3). Bob's = $4,075.00.
-
-**Routes and exact visible text** (Kane asserts on these):
-
-| Route | Behaviour | Text |
-|---|---|---|
-| `GET /login`, `POST /login` | session cookie; bad creds re-render | `Invalid email or password` |
-| `GET /invoices` | current user's invoices, table columns `Invoice #`, `Client`, `Amount`, `Status`; footer total | `Total outstanding: $1,289.99` |
-| `GET /invoices/:id` | detail; **404 page if not owner** | header `Invoice #3`, `Client: Initech`, `Amount: $89.99`, `Status: Unpaid`; 404 page says `Invoice not found` |
-| `POST /invoices/:id/pay` | status → Paid, redirect to detail | banner `Invoice #3 marked as paid`, `Status: Paid` |
-| `GET /invoices/new`, `POST /invoices` | form; validation | `Amount must be greater than 0`; success → detail of new invoice |
-| `GET /health` | JSON | `{"ok":true,"bug":"<id or none>","seed":"v1"}` |
-
-Footer on every page shows `build: <bug id>` in small grey text so the room can see which mutant is live.
-
-**Mutants** — `app/src/mutants.ts` exports `MUTANTS: {id, title, description, bug_class}[]`; routes call `isBug(id)`. Exactly one behaviour per id:
-
-| id | Exact change | Default matrix |
-|---|---|---|
-| `leak_cross_tenant` | `GET /invoices/:id` drops `AND owner_id = ?` from the query. Alice at `/invoices/4` sees Umbrella $4,000.00. | yes |
-| `pay_no_persist` | `POST /pay` redirects with the success banner (flash) but skips the `UPDATE`. Detail still shows `Status: Unpaid`. | yes |
-| `total_off_by_one` | Total loop uses `< rows.length - 1`: Alice's total shows `$1,200.00` instead of `$1,289.99`. | yes |
-| `validation_inverted` | `if (amount > 0) error` instead of `<= 0`. | opt-in |
-| `login_any_password` | Password compare removed; any password logs in. | opt-in |
+- **Commit A is vulnerable by construction:** `routes/invoices.ts` detail handler is `SELECT * FROM invoices WHERE id = ?` with no `owner_id` check. The list route *does* filter by owner (so S3 passes; one leak, not three). Mark-as-paid also lacks the owner check (that's S4, opt-in).
+- **The intended patch** (what Codex should land, kept in `fixtures/prepared/S2.patch` as fallback): `WHERE id = ? AND owner_id = ?`, and a 404 page `Invoice not found` when no row. About four lines.
+- Footer shows `build: <git short sha>` so the room can see A vs B.
+- No `BUG` env var.
 
 ---
 
-## 7. Experiment protocol and verdict rules (the proof discipline)
-
-**Freeze the suite.** Before measurement, compute `suite_hash = sha256` over every `tests/*_test.md` plus its `output-*/` recordings. Every experiment record carries it. A `fix` changes the suite → new hash → the matrix must be rerun before any aggregate is reported.
-
-**One experiment = one (mutant, suite_hash) pair:**
-1. Start app with `BUG=<id>`; wait for `/health.bug === id`. For `id ≠ none`, run the probe first; if the probe shows no behavioural difference → verdict `invalid`, skip Kane.
-2. `kane-cli testrun run tests/ --parallel 1 --no-adaptive-heal --bug-detection off --agent --name "bugsy:<id>:<hash8>" < /dev/null`.
-3. Stop the app. Read the pack.
-
-**Verdict rules** (deterministic, from Kane's own fields):
+## 7. Verdicts (per scenario, from Kane's evidence)
 
 | Verdict | Rule |
 |---|---|
-| `caught` | ≥1 member `status: failed` **and** that member's `failure.step_index ≥ 1` (it got past the first step, i.e. reached the app) **and** the clean baseline for the same `suite_hash` has that member `passed` |
-| `survived` | all members `passed`, and probe confirmed the mutant is active |
-| `inconclusive` | any member `broken` or `interrupted`; or a failure at `step_index 0`; or the clean baseline is not all-passed; or the pack is missing |
-| `invalid` | probe found no behavioural difference, or app failed `/health` |
+| `leak_confirmed` | the scenario's test `status: failed` with `failure.step_index ≥ 1` at the step whose expected text is the denial (`Invoice not found`), **and** its paired control (S1) `passed` in the same run |
+| `denied_as_expected` | the scenario's test `passed` **and** its paired control `passed` |
+| `inconclusive` | any member `broken`/`interrupted`; failure at step 0; control failed; sign-in step failed; pack missing |
 
-**Score:** `catch_rate = caught / (caught + survived)` over conclusive, valid experiments. The report always shows `attempted`, `inconclusive`, `invalid` counts next to it. It is a sensitivity measure against *these* mutants, nothing more.
+A failing sign-in, a timeout, or a broken app is never "secure". The control is what makes a denial mean something.
 
-**Why `step_index ≥ 1`:** a failure at step 0 is almost always "couldn't open the URL", not a caught bug. This is the cheapest attribution rule that survives a hackathon; the report shows the failing step's text and screenshot so a human can check it.
+`bugsy patch` is allowed to commit only when, on the patched app: S2 `denied_as_expected` **and** S1 `passed` **and** S3 `passed`. Self-check passes when S2 on the reverted app is `leak_confirmed`.
 
 ---
 
 ## 8. Data contracts
 
-`mutants.json` (generated from the app's registry):
+`bugsy.config.json`
 ```json
-[{"id":"leak_cross_tenant","title":"Cross-tenant invoice access","description":"...","bug_class":"authorization","probe":{"login_as":"alice","get":"/invoices/4","expect_clean":404,"expect_mutant":200,"marker":"Umbrella"}}]
+{"app":{"start":"npx tsx app/src/server.ts","url":"http://localhost:3000","health":"/health","source_globs":["app/src/routes/**"]},
+ "accounts":{"alice":{"email":"alice@ledger.test","password":"alice123"},"bob":{"email":"bob@ledger.test","password":"bob123"}},
+ "ownership_rule":"Each invoice belongs to exactly one user. Alice owns invoices 1-3, Bob owns 4-6. A signed-in user may view and change only their own invoices; any other invoice must show 'Invoice not found'.",
+ "routes":["GET /login","POST /login","GET /invoices","GET /invoices/:id","POST /invoices/:id/pay","GET /invoices/new","POST /invoices"]}
 ```
 
-Experiment record (one per mutant per run, appended to `bugsy.report.json.history[]`):
+Scenario (OpenAI output schema, one per entry; Bugsy renders them to `requirements/authz-scenarios.md`):
 ```json
-{"mutant":"leak_cross_tenant","suite_hash":"3f9a…","app_rev":"a958153","settings":{"parallel":1,"adaptive_heal":false},
- "probe":{"clean_status":404,"mutant_status":200,"marker_found":true},
- "kane":{"execution_id":"…","pack":".testmuai/evidence/….evidence","members":[{"path":"tests/login_test.md","status":"passed"},{"path":"tests/invoice_detail_test.md","status":"passed"}]},
- "verdict":"survived","started_at":"…","duration_s":212}
+{"id":"S2_other_reads_by_url","kind":"leak_check","control_id":"S1_owner_reads_own",
+ "title":"Another user cannot open an invoice by URL",
+ "requirement":"A signed-in user who opens the URL of an invoice they do not own sees 'Invoice not found' and none of that invoice's details.",
+ "steps":["Sign in as Bob","Open /invoices/4 and confirm it shows Client: Umbrella","Sign out","Sign in as Alice","Open /invoices/4"],
+ "expected":["The page shows 'Invoice not found'","The text 'Umbrella' is not on the page","The text '$4,000.00' is not on the page"]}
 ```
 
-`bugsy.report.json`:
+Finding (in `bugsy.report.json.findings[]`):
 ```json
-{"suite_hash":"…","baseline":{"execution_id":"…","all_passed":true},
- "matrix":[/* latest experiment per mutant for this suite_hash */],
- "summary":{"attempted":3,"caught":1,"survived":2,"inconclusive":0,"invalid":0,"catch_rate":0.33},
- "history":[/* every experiment ever, any suite_hash */],
- "fixes":[{"mutant":"leak_cross_tenant","addendum":"requirements/addendum-leak_cross_tenant.md","test":"tests/tenant_isolation_test.md","green_exec":"…","red_exec":"…","commit":"…"}]}
+{"scenario":"S2_other_reads_by_url","verdict":"leak_confirmed","commit":"<A>","kane":{"execution_id":"…","failed_step":5,"screenshot":"evidence/<id>/S2/5-screenshot.png"},
+ "patch":{"commit":"<B>","files":["app/src/routes/invoices.ts"],"diff":"…","patcher":"codex"},
+ "rerun":{"execution_id":"…","S1":"passed","S2":"passed","S3":"passed"},
+ "self_check":{"execution_id":"…","S2":"failed","tests_detect_leak":true}}
 ```
 
 ---
 
 ## 9. CLI spec
 
-All commands accept `--app-dir ./app --tests ./tests --port 3000 --json`. Exit 0 on completion even when mutants survive (that's a result, not an error); exit 1 only on Bugsy's own failure.
+- **`bugsy scan [--scenarios-only] [--use-prepared]`** — generate scenarios (OpenAI), design tests (Kane), start app, run, verdicts, report. `--scenarios-only` stops after writing the requirements doc so you can read it at the table. `--use-prepared` skips design and uses `fixtures/prepared/tests/authz/` (printed as `USING PREPARED TESTS`).
+- **`bugsy patch <scenario> [--patcher codex|api] [--use-prepared]`** — §5 sequence. Prints the diff before applying. Commits as `fix(authz): <scenario> — Kane <red_exec> red on <A>, <green_exec> green on <B>`.
+- **`bugsy self-check [<scenario>]`** — revert, rerun, expect red, restore. Never leaves the tree reverted.
+- **`bugsy report`** — regenerate HTML.
+- Global: `--no-report` (don't wrap with `kanehack`), `--json`.
 
-- **`bugsy run [--mutants default|all|<id,...>]`** — baseline on `none` first (abort with a clear message if not all green), then each mutant per §7. Prints the table below, writes JSON + HTML.
-- **`bugsy probe <mutant>`** — starts clean, probes, starts mutant, probes, prints both results and the HTML snippet around the marker. Used standalone in the demo.
-- **`bugsy fix <mutant> [--use-prepared]`** — §5 sequence. On a Kane pause (exit 3) answers once with `--message "<test_hint>"`; on a second pause, or after 4 minutes, falls back to `fixtures/prepared/<mutant>_test.md` **and prints `USING PREPARED TEST`** so nobody mistakes it for live generation. Commits `requirements/addendum-*.md`, the new `_test.md`, its `output-*/` recordings, and the two packs. Message: `test: catch <mutant> — Kane <G> green on clean, <R> red on mutant`.
-- **`bugsy report`** — regenerates HTML from JSON.
-
-Output of `run`:
+Output of `scan`:
 ```
-Bugsy ▸ suite 3f9a…  app a958153  settings parallel=1 heal=off
-  baseline  none               passed 4/4   exec 7c1d…
-  ✔ caught   total_off_by_one   invoice_list_test step 3 "verify total is $1,289.99"  exec 9e20…
-  ✘ survived pay_no_persist     4/4 passed — no test revisits the invoice after paying   exec 1b77…
-  ✘ survived leak_cross_tenant  4/4 passed — no test opens another user's invoice       exec 55aa…
-catch rate 1/3 (33%) · attempted 3 · inconclusive 0 · invalid 0
-next: bugsy fix leak_cross_tenant
+Bugsy ▸ Ledger @ a1b2c3d (vulnerable)  scenarios: 3  Kane exec 7c1d…
+  ✔ S1_owner_reads_own        passed   (control)
+  ✘ S2_other_reads_by_url     LEAK CONFIRMED  step 5: expected "Invoice not found", saw "Client: Umbrella"  → evidence/7c1d/S2/5-screenshot.png
+  ✔ S3_list_isolation         denied as expected
+next: bugsy patch S2_other_reads_by_url
 ```
 
 ---
 
 ## 10. Kane integration (verified against the installed 0.10.0 skill docs)
 
-| Need | Command / fact | Source |
-|---|---|---|
-| Design tests from PRD | `kane-cli context ingest requirements/ledger-prd.md --mode agent` → `kane-cli context review --approve <uc…>` → `kane-cli design tests --use-case <uc> --mode agent --max 1` | assurance.md §1, §5 |
-| Pause handling | exit `3` = paused, resume with `--resume <sid> --message "…"` | assurance.md §2 |
-| Batch run | `kane-cli testrun run tests/ --parallel 1 --no-adaptive-heal --bug-detection off --agent --name <label> < /dev/null` | testrun.md |
-| Per-test outcome | `testrun_member_end {path, status: passed\|failed\|broken\|interrupted, failure?: {message, step_index?}, log_path}`; unauthored tests emit `testrun_authored_member_end` | testrun.md events |
-| Totals + exec id | `testrun_summary {totals, execution: {id, status}}`, then `testrun_done` | testrun.md |
-| Pack location | `.testmuai/evidence/<execution_id>.evidence` (zip) | evidence.md |
-| Verdict detail | `tests/<id>/result.yaml` (`steps[]: ordinal, status, kind`), `steps/<n>-<id>/failure.yaml` (`error`, `page_state`, `triage.rca`), `screenshot.png` | debug.md |
-| Replay semantics | first run authors + records; later runs replay from `output-<stem>/` (**commit it**); editing step N re-authors N onward | testmd.md replay rule |
-| Healing | default: up to 3 shrinking replays then full re-author → **off on all measurement runs** | testmd.md §replay policy |
-| Frontmatter | `url: http://localhost:3000`, `headless: true`, `mode: testing`, `max_steps: 25`, `tags: [ledger]` | testmd.md |
-| Project setup | `testrun` needs a Test Manager project/folder; `kane-cli config project` / `folder` once at 11:15, or accept the `project_folder_auto_defaulted` event | testmd.md, testrun.md preflight |
+| Need | Command / fact |
+|---|---|
+| Scenarios → tests | `kane-cli context ingest requirements/authz-scenarios.md --mode agent` → `context review --approve <uc…>` → `design tests --use-case <uc> --mode agent --max 1` per scenario. Exit 3 = pause; answer once with `--resume <sid> --message "<scenario.steps joined>"`; second pause → prepared tests, announced |
+| Run | `kane-cli testrun run tests/authz --parallel 1 --no-adaptive-heal --bug-detection off --agent --name "bugsy:<phase>:<sha7>" < /dev/null` wrapped by `kanehack report` |
+| Outcomes | `testrun_member_end {path, status, failure?: {message, step_index}}`, `testrun_summary {execution: {id}}`, `testrun_done` |
+| Pack | `.testmuai/evidence/<execution_id>.evidence`; `tests/<id>/result.yaml`, `steps/<n>-<id>/failure.yaml`, `screenshot.png` |
+| Two accounts in one test | sequential sign-in → sign-out → sign-in in one Chrome; `mode: testing` so the denial assertion can fire; `max_steps: 30` |
+| Replay | first run authors and records (`output-<stem>/`, committed); reruns on commit B replay; `--no-adaptive-heal` so a denial can't be healed into a pass |
+| Authoring environment | **Author on commit A** (vulnerable): S2's expected text is in the step, so authoring records the *assertion*, which fails on A. If authoring on A proves unreliable, author S2 on B and run on A (noted in the report) |
 
-Authoring the negative test (`tenant_isolation`) **must** happen with `BUG=none` so the recording captures `Invoice not found`. Bugsy enforces this: `fix` always authors on clean.
-
-**Unverified until the first run (checkpoint C1):** credit cost per authored run and per replay; wall time per test; whether `design tests` from a 40-line PRD yields 3–4 tests or more.
+**Unverified until C1:** authoring cost/time per scenario; whether `design tests` keeps the sign-out/sign-in sequence intact; whether a failed authoring step on A seals a usable pack.
 
 ---
 
 ## 11. OpenAI integration
 
-Model: `OPENAI_MODEL` from `.env`. At 11:15 run `curl -s https://api.openai.com/v1/models -H "Authorization: Bearer $OPENAI_API_KEY" | jq -r '.data[].id' | grep -i gpt-5 | sort` and pick the newest general model listed. Responses API, `text.format: {type: "json_schema", strict: true}`.
+**Scenario generation** (`scan`): Responses API, strict JSON schema (§8), model `OPENAI_MODEL`. Input: ownership rule, routes, account labels (never passwords), fixture summary. Prompt rules: every leak check names its control; expected texts must be exact strings from the PRD; steps are browser actions a person could follow; no SQL, no HTTP talk. Logged to `bugsy/.calls/`.
 
-**Call 1 — gap analysis (`fix`).** Input: mutant `{id, title, description, bug_class}`, `ledger-prd.md`, every `tests/*_test.md`, the survived run's member list with each test's step headings. Output schema:
-```json
-{"missing_requirement":"string (one sentence, user-observable)",
- "why_current_tests_miss_it":"string",
- "addendum_markdown":"string (a requirement paragraph in the PRD's voice; no test steps)",
- "test_hint":"string (one sentence Bugsy can send to Kane if design pauses)"}
-```
-Rule in the prompt: the requirement must be general ("a user must not view another user's invoice"), never name invoice #4 or the mutant. This addresses the overfitting question: Kane designs the test from the requirement, and the test is first proven on the clean app.
+**Patching** (`patch`): `codex exec --cd app "<prompt>"` with: the scenario requirement, Kane's `failure.yaml` (error, expected/actual), the step screenshot path, the route file. Instruction: fix on the server, smallest change, don't touch views except the 404 message, output a unified diff only. Fallback `--patcher api`: same prompt to the Responses API, schema `{diff, rationale}`. Bugsy validates with `git apply --check` before applying; a bad diff → prepared patch, announced.
 
-**Call 2 — explain caught failure (`run`, opt-in).** Input: `failure.yaml` of the failing step + the mutant description. Output: `{"explanation":"one line","consistent_with_mutant":true|false}`. Shown in the report; **does not change the verdict**.
-
-Every call is logged to `bugsy/.calls/<ts>-<kind>.json` (`{model, input, output, usage}`). The key is never read by any code path that writes to disk other than the SDK.
+Both are "built with OpenAI". Say which was used in the README.
 
 ---
 
-## 12. Live demo sequence (4:00 table, ≤ 6 min)
+## 12. Live demo (16:00, ≤ 6 min). Alice is the main character.
 
-Pre-state: app not running; `bugsy.report.json` from the 2:30 matrix on disk; terminal font 18pt; `report.html` open in a tab.
+Pre-state: Ledger at commit A running; `requirements/authz-scenarios.md` generated at 14:30 on disk; morning's `bugsy.report.json` present; `report.html` open; dry-run timing written in `docs/demo-script.md`.
 
-| # | Live or prepared | Action | What the judges see |
+| # | Live/prepared | Action | What they see |
 |---|---|---|---|
-| 1 | prepared | `jq .summary bugsy.report.json` + open `report.html` | The matrix with timestamps, suite hash, exec ids. "This ran at 2:30, here's the pack for each row." |
-| 2 | **live** | `bugsy probe leak_cross_tenant` | Clean: `404 Invoice not found`. Mutant: `200`, HTML contains `Umbrella`, `$4,000.00`. "Alice just read Bob's invoice." |
-| 3 | **live** | `bugsy run --mutants leak_cross_tenant` | Kane runs 4 tests against the leaking app, all pass. Verdict `survived`. "The suite is green on a leaking app. The PRD never mentioned tenant isolation, so the agent never tested it." |
-| 4 | **live** | `bugsy fix leak_cross_tenant` | OpenAI names the missing requirement; Kane designs `tenant_isolation_test.md`; green on clean (exec G); red on mutant at the `Invoice not found` assertion (exec R); commit lands. If it pauses twice: `USING PREPARED TEST` is printed and said aloud. |
-| 5 | prepared | `git log --oneline -5` | The commit message with both exec ids. |
-| 6 | prepared | `report.html` after `bugsy report` | Row flips to `caught`; history shows both suite versions. Aggregate is marked "rerun pending" until the full matrix runs again — say so. |
+| 1 | live, 20 s | Open the browser as Alice, type `/invoices/4` | Alice reads Bob's $4,000 Umbrella invoice. "Ledger was built from a PRD that never said she couldn't." |
+| 2 | prepared, 30 s | `cat requirements/authz-scenarios.md` | OpenAI's three scenarios from one sentence of rule; S2 has its control S1. |
+| 3 | live, 90 s | `bugsy scan --use-prepared` (tests designed earlier; say so) | Kane: S1 passes, S2 fails at "Invoice not found", screenshot of Alice's browser with Bob's invoice. **LEAK CONFIRMED.** Hub: suspected defect. |
+| 4 | live, 2 min | `bugsy patch S2_other_reads_by_url` | Codex's diff (four lines). Applied, restarted, same scenarios rerun: all green. Alice denied, Alice still sees her own. Commit B. Hub: fix re-verified. |
+| 5 | live, 45 s | `bugsy self-check` | Patch reverted, S2 red again, restored. "The tests detect the leak. They're not decorative." |
+| 6 | prepared, 30 s | `report.html`, `git log -3` | Finding, diff, before/after run ids, self-check. Close with §2's three sentences. |
 
-Measured at the 3:30 dry run: steps 2–4 must fit in 4 minutes. If step 4 measures > 3 min, run it with `--use-prepared` and show the morning's live-generation log instead.
+Fallbacks, each announced: `--use-prepared` tests; `fixtures/prepared/S2.patch` if Codex's diff fails `git apply --check` or exceeds 2 min.
 
 ---
 
-## 13. Implementation order and go/no-go checkpoints
+## 13. Timeline (it is ~13:10 now)
 
-| Time | Checkpoint | Go | No-go fallback |
+| Time | Checkpoint | Go | No-go |
 |---|---|---|---|
-| 11:30 **C0** | `kanehack pair` + `consent yes` done, `kanehack status` answers; Kane project configured; OpenAI model chosen; Ledger `/health` + login + list + detail up on clean | — | — |
-| 12:15 **C1** | One hand-run `kane-cli testrun run` of one PRD-designed test on clean: passed, pack on disk, `result.yaml` readable. Record credits delta + wall time. | ≤ 4 min and ≤ 2,000 credits per authored test → full plan | > 6 min or > 5,000 credits → 2 mutants, 3 tests, no opt-ins |
-| 1:00 **C2** | `bugsy run --mutants leak_cross_tenant`: clean baseline green, probe shows leak, Kane green on mutant → `survived` recorded from the pack, not the exit code | → build `fix` | verdict engine broken → stop features, fix this first; it's the product |
-| 2:00 | **Mid-eval**: show C2 output + probe. Ask the judges one question: "is the survived verdict convincing as shown?" | | |
-| 2:30 **C3** | `bugsy fix leak_cross_tenant` end-to-end once, live generation. Timed. | ≤ 3 min → live at 4:00 | > 3 min or two pauses → `--use-prepared` at 4:00, say so |
-| 3:00 **C4** | Full matrix on the new suite; README; packs committed; `report.html` | | |
-| 3:30 | Dry run §12 twice; `kane-cli balance`; **hub housekeeping**: confirm the suspected defects in the Proof tab, upload the key packs (≤ 4 MB each, or Proof tab), tick the runs under "Kane runs for this project", paste pitch / harness description / Kane components / known limitations on the Submit tab | | |
-| 4:00 | Scored eval | | |
-| 5:00 | Content hour (§16) | | |
+| 13:30 **C0** | `kanehack pair`/`consent`; Kane project set; `OPENAI_MODEL` chosen; `codex login`; Ledger up at commit A, leak reproducible by hand | | |
+| 14:00 **mid-eval** | Show the hand-reproduced leak + one real Kane run of S2 (even via `kane-cli run "<S2 objective>"` one-shot). Ask: "is the control + self-check convincing?" | | |
+| 14:15 **C1** | One authored Kane run each of S1 and S2 on commit A; S1 passed, S2 failed at the right step; pack readable. Credits + time noted | ≤ 4 min each | author S2 on B, run on A (§10), fewer scenarios |
+| 14:45 **C2** | `bugsy scan` end to end with live OpenAI scenarios + Kane design | works | `--use-prepared` tests for the demo, design shown from the morning log |
+| 15:15 **C3** | `bugsy patch` end to end with Codex; `self-check` red; both timed | ≤ 2 min patch | prepared patch at 16:00, announced |
+| 15:30 | README, redacted exports, hub: confirm the defect, tick runs, Submit tab fields | | |
+| 15:40 | Dry run ×2 | | |
+| 16:00 | Demo | | |
+| 17:00 | `$hack-gtm`, video, posts | | |
 
-Ownership: you run every Kane command that spends credits; agents build against recorded NDJSON/packs from C1 (`fixtures/kane-samples/`) so they don't burn credits iterating.
+Only you run Kane against credits; agents build against `fixtures/kane-samples/` recorded at C1.
 
 ---
 
 ## 14. Risks
 
-| Risk | Likelihood | Handling |
-|---|---|---|
-| Kane authored run slow/expensive | medium | C1 measures; cut matrix per §13 |
-| Design flow yields odd tests (too many, wrong shape) | medium | `--max 1`; review the file before authoring; if unusable, re-design with `--force` once, then hand-write and **say so in README** |
-| Negative test authored on the mutant by mistake | low (enforced) | `fix` hard-codes `BUG=none` for authoring and asserts `/health.bug === "none"` first |
-| Healing masks a mutant | eliminated | `--no-adaptive-heal` on every measurement run |
-| Shared DB state between tests | eliminated | `--parallel 1`, fresh app per experiment; the mark-paid test pays invoice #3, the total test reads Alice's list before any pay in the same run order — and the app is reseeded between experiments anyway |
-| Port 3000 held by a crashed app | medium | app-runner refuses to start and prints `lsof -i :3000` PID; `bugsy run --kill-stale` |
-| Test Manager project not set → exit 2 | medium | C0 configures it; parse `project_folder_auto_defaulted` |
-| `bug-detection` halts authoring | low | `--bug-detection off` everywhere |
-| Secrets in packs or call logs | low | `.calls/` writer strips any `sk-` pattern; pre-commit grep in `npm run precommit`; `.env` gitignored |
-| Live `fix` stalls | medium | prepared test + announced fallback |
-| Overclaiming | medium | §15 wording only |
+| Risk | Handling |
+|---|---|
+| Kane design flow mangles the sign-out/sign-in sequence | C1 checks it; fallback is one `kane-cli run` objective per scenario (ad-hoc runs are allowed), noted in README |
+| Authoring S2 on commit A records the failure strangely | §10: author on B, run on A; say so |
+| Codex patch wrong or slow | `git apply --check`, 2-min cap, prepared patch, announced |
+| "Deny everyone" patch | S1 control fails → `patch` refuses to commit |
+| Self-check leaves the tree reverted | `finally { git checkout -- . }`; `git status` asserted clean before and after |
+| Healing masks the denial | `--no-adaptive-heal` everywhere |
+| Secrets | passwords only in `bugsy.config.json` (committed: they're seeded demo accounts, say so); OpenAI key in `.env`; packs never committed |
+| Overclaiming | §15 |
 
 ---
 
-## 15. Claims we can make once the evidence exists
+## 15. Claims we can make
 
-Safe:
-- "Bugsy measured that this Kane suite caught N of M planted bugs; here are the packs."
-- "The cross-tenant leak survived a green suite; the PRD never specified isolation."
-- "OpenAI named the missing requirement; Kane designed the test from it; it passed on the clean app and failed on the mutant (exec ids)."
-- "First mutation harness for AI-generated Kane suites, with a requirement→test repair loop."
-
-Not safe: "no prior art" (Mutta, 2023, does E2E web mutation testing), "works on any app", "proves your tests work", any quoted HN point counts or incident numbers without a link and the word "reported".
+Safe: "Kane confirmed a cross-tenant invoice read on commit A (exec id), Codex patched it in `routes/invoices.ts` (commit B), the same scenarios passed on B (exec id), and reverting the patch made S2 fail again (exec id)." "Scenarios were generated by OpenAI from a one-sentence ownership rule; every leak check has an owner control." Not safe: "secures your app", "finds all IDORs", "works on any app", "no prior art for browser authz testing".
 
 ---
 
-## 16. GTM (5:00–6:00)
-
-Use the event's `$hack-gtm` skill in Codex: it drafts the X thread, LinkedIn post, Show HN title + first comment, blog, deck and a 60–90 s showcase video from one project brief (`~/.agents/skills/hack-gtm/assets/brief-template.md`) and an evidence pack. Fill the brief by 3:00 so 5:00 is paste-and-approve. Its video pipeline (Remotion or ffmpeg, macOS `say` voice) is the sanctioned "motion graphic": it animates the real Kane steps from the pack, never mocks.
-
-Rules it enforces (so don't fight them): tag `@testmuai` and `@OpenAI` on X, company page *TestMu AI* on LinkedIn, hashtag `#KaneCLIHackDay`; "built with OpenAI, tested with Kane CLI"; every Kane claim traces to a run; you post everything yourself; evidence packs never appear in a post. Publish the Ship Page (`kaneclihack.sh/ship/<team>`) in the site's Studio first — the deck URL hangs off it.
-
-Still ours to write: the 2–4 min demo video with *your* voiceover (§12 beats; the rubric wants that length, `hack-gtm`'s 60–90 s showcase is the teaser), blog title *"I planted bugs in an AI-built app to see if its AI-written tests would notice"*, Show HN *"Show HN: Bugsy – mutation testing for AI-generated browser tests (Kane CLI + OpenAI)"*, 3–4 friends for the reach bonus.
-
----
-
-## 17. Handoff prompts
+## 16. Handoff prompts
 
 **Agent A — Ledger app.**
-> Build `app/` per `BUGSY_SPEC.md` §6. Express + EJS + better-sqlite3 in-memory + express-session, TypeScript run via `tsx app/src/server.ts`. Fixtures and visible strings exactly as the tables state. Implement all five mutants in `src/mutants.ts` + routes with `// MUTANT: <id>` comments; each id changes exactly one behaviour. `/health` returns `{ok, bug, seed}`. Footer shows `build: <bug>`. Verify every mutant with curl (log in, hit the route, show the diff from clean) and paste the curl transcript into `app/VERIFY.md`. Write no tests.
+> Build `app/` per `requirements/ledger-prd.md` and `BUGSY_SPEC.md` §6: Express + EJS + better-sqlite3 in memory + express-session, TypeScript via `tsx`. Exact fixtures and strings. **The invoice detail route must NOT check ownership** (that is the seeded vulnerability); the list route must. `/health` returns `{ok, sha}`; footer shows `build: <sha7>`. Write `fixtures/prepared/S2.patch` as the intended four-line fix (do not apply it). Verify with curl: Alice's session can read `/invoices/4` on this commit. No tests.
 
-**Agent B — runner, verdicts, report.**
-> Build `bugsy/` commands `run`, `probe`, `report` per `BUGSY_SPEC.md` §0, §5, §7, §8, §9, §10. Read `~/.agents/skills/kane-cli/references/testrun.md`, `evidence.md`, `debug.md`, `testmd.md` first. Spawn Kane through `kanehack report --objective <label> -- kane-cli …` when `KANEHACK=1` (bare `kane-cli` otherwise), stdin `/dev/null`, parse the events named in §10 and ignore unknown types (including the trailing `kanehack_report` line), read verdicts from the pack per §7 — never from the exit code. Write the redacted export (`evidence/<exec_id>/`, no HAR, no console logs) and never copy a `.evidence` file into the repo tree. Build against `fixtures/kane-samples/` (NDJSON + a pack) that the owner records at C1; do not run Kane yourself. Sequential only. `report.html` self-contained.
+**Agent B — scan, verdicts, report, self-check.**
+> Build `bugsy/` commands `scan`, `self-check`, `report` per `BUGSY_SPEC.md` §5, §7, §8, §9, §10. Read `~/.agents/skills/kane-cli/references/testrun.md`, `evidence.md`, `debug.md`, `testmd.md`, `assurance.md`. Kane through `kanehack report` unless `--no-report`; verdicts from the pack per §7, never the exit code; redacted exports only; self-check always restores the tree. Build against `fixtures/kane-samples/` from C1; do not run Kane.
 
-**Agent C (Codex) — OpenAI + fix.**
-> Build `bugsy/src/openai.ts` and `bugsy fix` per `BUGSY_SPEC.md` §5 (sequence diagram), §9, §11. Responses API, strict JSON schema, model from `OPENAI_MODEL`. Drive `kane-cli context ingest` / `context review --approve` / `design tests --mode agent --max 1`; handle exit 3 once with `--message`, then fall back to `fixtures/prepared/<mutant>_test.md` printing `USING PREPARED TEST`. Author on `BUG=none` only (assert `/health`). Stage only the files you created. Log calls to `bugsy/.calls/` with the key never present. Do not run Kane against credits without the owner's go.
+**Agent C — OpenAI scenarios and Codex patch.**
+> Build `bugsy/src/scenarios.ts` and `bugsy/src/patch.ts` per `BUGSY_SPEC.md` §8, §9, §11. Responses API with the strict schema; render to `requirements/authz-scenarios.md`. Patch via `codex exec` with a 2-minute cap, validate with `git apply --check`, apply, restart, rerun through the Kane adapter, commit only the files the diff touched, only when S1+S2+S3 pass. `--patcher api` fallback. Never print the API key; log calls to `bugsy/.calls/`.

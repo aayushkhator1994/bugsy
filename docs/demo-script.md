@@ -1,57 +1,49 @@
 # Demo script
 
-Two versions: the table demo at 16:00 (scored, live) and the 2–4 minute video with voiceover (recorded 17:00).
+Alice is the main character. Every step is something a person would do or see.
 
-## Pre-flight (15:30)
+## Pre-flight (15:40)
 
-- [ ] App **not** running; `lsof -i :3000` empty
-- [ ] `bugsy.report.json` from the 14:30 matrix on disk; `report.html` open in a browser tab
-- [ ] Terminal font 18 pt, dark theme, window half screen; browser other half
-- [ ] `kane-cli balance` noted; `kanehack status` shows the morning's runs as VERIFIED
-- [ ] `fixtures/prepared/leak_cross_tenant_test.md` exists (fallback)
-- [ ] Dry-run steps 2–4 twice; write the measured time here: ____ min
+- [ ] Ledger running at commit A (vulnerable); browser tab signed in as Alice on `/invoices`
+- [ ] `requirements/authz-scenarios.md` on disk (generated at C2)
+- [ ] `fixtures/prepared/tests/authz/` and `fixtures/prepared/S2.patch` exist
+- [ ] `bugsy.report.json` from C3 present; `report.html` open in a second tab
+- [ ] `git status` clean; `kanehack status` shows the afternoon's runs VERIFIED
+- [ ] Terminal 18 pt, half screen; browser other half
+- [ ] Dry-run timings: scan ____ · patch ____ · self-check ____
 
 ## Table demo (≤ 6 min)
 
-**Open (20 s).** "Coding agents write the app and the tests, then say all green. Bugsy checks whether those tests would notice a real bug. We planted bugs in an app and ran its Kane suite against each one."
+**Open (15 s).** "This is Alice. She invoices her clients with Ledger. Ledger was built this morning by a coding agent from a one-page PRD."
 
-**1. The morning's matrix (30 s, prepared).**
-`jq .summary bugsy.report.json` then the `report.html` tab.
-"Three planted bugs, four Kane tests designed from the PRD. Caught one, missed two. Every row is a Kane execution id, you can open the packs on the hub."
+**1. The leak, by hand (20 s, live).** In Alice's browser tab, type `/invoices/4`. Bob's $4,000 invoice to Umbrella appears. "The PRD never said she couldn't. So nobody tested it. This is how vibe-coded apps leak."
 
-**2. Prove the bug is real (40 s, live).**
-`bugsy probe leak_cross_tenant`
-"Clean app: Alice opens Bob's invoice, gets 404 Invoice not found. Mutant: 200, and there's Umbrella, four thousand dollars. Alice just read Bob's invoice."
+**2. The rule (30 s, prepared).** `cat requirements/authz-scenarios.md`. "We gave Bugsy one sentence: Alice owns 1 to 3, Bob owns 4 to 6, nobody sees anyone else's. OpenAI turned it into three scenarios. Every leak check has a control: Alice must still open her own invoice."
 
-**3. The suite is blind to it (90 s, live).**
-`bugsy run --mutants leak_cross_tenant`
-While Kane runs: "Same four tests, same settings, healing off so Kane can't paper over it. Watch them pass."
-On the verdict: "Survived. Green on a leaking app. The PRD never said a user can't see another user's invoice, so the agent never tested it. That's how AI-built apps ship data leaks with green CI."
+**3. Kane confirms it (90 s, live).** `bugsy scan --use-prepared`. While Kane runs: "Kane signs in as Bob, opens his invoice, signs out, signs in as Alice, opens the same URL, expects Invoice not found." On the verdict: "Leak confirmed. Here's the screenshot of Alice's browser with Bob's invoice. The control passed, so this is a leak, not a broken app. The hub just recorded a suspected defect."
 
-**4. Close the gap (2–3 min, live).**
-`bugsy fix leak_cross_tenant`
-"OpenAI reads the bug, the PRD and the tests and writes the requirement nobody wrote: a user must not view another user's invoice. Kane designs a test from that. Bugsy authors it on the clean app, green. Runs it on the mutant, red at the Invoice not found assertion. Commits. Replays the suite at the new commit, green again, so the hub records the fix as re-verified."
-If it pauses twice or passes 3 min: "Design paused, using the test we generated this morning" (Bugsy prints `USING PREPARED TEST`).
+**4. Codex fixes it (2 min, live).** `bugsy patch S2_other_reads_by_url`. "Codex reads Kane's failure and the route. Four lines: check the owner, 404 otherwise." Show the diff. "Applied. Restarted. Same three scenarios." On green: "Alice denied. Alice still sees her own. Committed. The hub records the fix as re-verified on a new commit."
+If the diff fails validation or passes 2 min: "Using the prepared patch" (Bugsy prints it).
 
-**5. Receipts (30 s, prepared).**
-`git log --oneline -5`
-"Each fix commit carries both Kane ids: green on clean, red on the bug."
-`report.html` after `bugsy report`: the row flips to caught. "The aggregate says rerun pending until the whole matrix runs on the new suite; we don't fake the number."
+**5. Does the test actually test anything? (45 s, live).** `bugsy self-check`. "Revert the patch, rerun. Red. Restore. The scenario detects the leak; it's not decorative."
 
-**Close (15 s).** "Kane proves the app works. Bugsy proves the tests would tell you if it didn't. Open source tonight."
+**6. Receipts (30 s, prepared).** `report.html`: the finding, the diff, the before/after Kane ids, the self-check. `git log -3`.
 
-Questions to expect:
-- *How is this different from coverage?* Coverage says a test exists for a requirement. Catch rate says the test fails when the behaviour breaks. The report shows both side by side.
-- *Does the new test just check invoice 4?* No. The requirement is general, Kane designs from the requirement, and we prove it on the clean app first.
-- *Prior art?* Mutation testing is decades old; Mutta did it for E2E web in 2023. New here: AI-generated Kane suites and the requirement-to-test repair loop.
+**Close (20 s).** "Three things you don't get elsewhere: the input is a rule, not payloads. Every denial has an owner control, so a fix that breaks the app fails. And the seatbelt checks itself. Built with OpenAI, tested with Kane CLI."
 
-## Video (2–4 min, voiceover, no editing beyond trims)
+Expected questions:
+- *Isn't this just an IDOR scanner?* Scanners send payloads. Bugsy starts from your ownership rule, pairs every denial with a control, and proves its own tests by reverting the fix. And it tests through the UI, with screenshots.
+- *Did you plant the bug?* Yes, commit A ships without the check, and we say so. It's the bug the PRD invites.
+- *What if Codex's patch is wrong?* It only commits when the leak scenario passes and the owner control passes. "Deny everyone" fails.
+- *Any app?* Not today. Ledger, three scenarios, one browser.
+
+## Video (2–4 min, voiceover)
 
 | Time | On screen | Voiceover |
 |---|---|---|
-| 0:00–0:25 | Title card, then a terminal with a green Kane run | "An AI agent wrote this app. It wrote the tests too. They pass. Would they fail if something broke? That's what Bugsy measures." |
-| 0:25–0:50 | `report.html` matrix | "We planted three realistic bugs. Kane ran the suite against each. One caught, two survived." |
-| 0:50–1:20 | `bugsy probe` output | "This survivor is a data leak. Alice opens Bob's invoice. The clean app says not found. The bug hands it over." |
-| 1:20–2:00 | `bugsy run --mutants leak_cross_tenant`, Kane passing | "Same suite, same settings, all green, on a leaking app. The PRD never mentioned it, so nobody tested it." |
-| 2:00–3:00 | `bugsy fix`, the requirement, Kane designing, green then red | "OpenAI names the missing requirement. Kane designs the test. Green on the clean app. Red on the bug. Committed with both Kane ids." |
-| 3:00–3:30 | `git log`, `report.html` row flipped, Proof tab counters | "The hub shows it as a suspected defect and a re-verified fix. Repo link below. Built with OpenAI, tested with Kane CLI." |
+| 0:00–0:25 | Alice's browser, `/invoices/4`, Bob's invoice | "Alice invoices clients with Ledger. An agent built it from a one-page PRD. The PRD never said she can't see Bob's invoices. So she can." |
+| 0:25–0:50 | `authz-scenarios.md` | "We gave Bugsy one sentence about who owns what. OpenAI wrote three scenarios, each with an owner control." |
+| 0:50–1:30 | `bugsy scan`, Kane running, LEAK CONFIRMED, screenshot | "Kane runs them in a real browser. Bob, then Alice, same URL. Leak confirmed, with a screenshot." |
+| 1:30–2:30 | `bugsy patch`, the diff, rerun green | "Codex patches the server check from Kane's failure. Same scenarios, patched app. Denied. Owner still fine. Committed." |
+| 2:30–3:00 | `bugsy self-check` red then restored | "Revert the patch, rerun. Red. The test detects the leak." |
+| 3:00–3:30 | `report.html`, Proof tab | "Suspected defect, re-verified fix, both on the hub. Built with OpenAI, tested with Kane CLI. Repo below." |

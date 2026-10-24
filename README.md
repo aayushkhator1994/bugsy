@@ -1,65 +1,68 @@
 # Bugsy
 
-**Would your AI-written browser tests notice a realistic bug?**
+**A security seatbelt for vibe-coded apps.**
 
-Bugsy plants one realistic bug at a time in an app, runs the app's [Kane CLI](https://www.testmuai.com/support/docs/kane-cli-introduction) test suite against each one, and reports which bugs the suite caught and which it missed. For every miss, an OpenAI model names the requirement nobody wrote down, Kane designs a test from it, and Bugsy proves the test is green on the clean app and red on the bug.
+Give Bugsy an app, two test accounts and one sentence about who owns what. OpenAI turns the rule into two-account authorization scenarios, each paired with an owner control. Kane CLI runs them in a real browser and reproduces the leak: Alice reads Bob's invoice. Codex patches the ownership check on the server. Kane reruns the same scenarios to prove the fix. Then Bugsy reverts the patch and reruns, to prove the tests would catch the leak again.
 
 Built with OpenAI, tested with Kane CLI, at Kane CLI Hack Day SF, 24 Oct 2026. `#KaneCLIHackDay`
 
-> Status: building. The design is in [BUGSY_SPEC.md](BUGSY_SPEC.md). Plain-language walkthrough with diagrams: [docs/how-it-works.md](docs/how-it-works.md).
+> Status: building. Build contract: [BUGSY_SPEC.md](BUGSY_SPEC.md). Plain-language walkthrough with diagrams: [docs/how-it-works.md](docs/how-it-works.md).
 
 ## Why
 
-Coding agents now write the feature *and* the tests, then report "all green". Green means the tests passed. It does not mean they would fail if something broke. Kane's `cover` tells you a test exists for each requirement; nothing tells you whether that test would notice a bug. Bugsy measures that.
+Coding agents ship apps from short PRDs. If the PRD never says "a user must not see another user's data", the agent never writes the check and never tests it. The app is green and Alice can type `/invoices/4` to read Bob's invoice.
+
+## What's different
+
+1. **Spec-driven.** The input is an ownership rule in plain English, not a list of attack payloads. Every scenario is a readable requirement before it's a test.
+2. **Every denial has an owner control.** "Alice is denied" only counts if "Alice can still open her own invoice" also passes. A patch that breaks the app fails.
+3. **It checks itself.** After the fix, Bugsy reverts the patch and reruns. If the scenario doesn't go red, it wasn't testing anything.
 
 ## How it works
 
 ```mermaid
 flowchart LR
-  A[Ledger demo app<br/>BUG=none] -->|baseline| K[Kane CLI runs the suite]
-  M[Ledger with one planted bug<br/>BUG=leak_cross_tenant] -->|experiment| K
-  K --> E[(evidence pack)]
-  E --> V{verdict}
-  V -->|a test failed at the bug| C[caught]
-  V -->|all green on a broken app| S[survived]
-  S --> O[OpenAI: which requirement<br/>was never written?]
-  O --> D[Kane designs a test<br/>from that requirement]
-  D --> P[green on clean,<br/>red on the bug: proven]
+  R["Ownership rule<br/>+ two accounts"] --> O["OpenAI<br/>scenarios with controls"]
+  O --> K1["Kane CLI<br/>runs them as Bob, then Alice"]
+  K1 -->|"Alice sees Bob's invoice"| F["Leak confirmed<br/>(screenshot, run id)"]
+  F --> C["Codex<br/>patches the server check"]
+  C --> K2["Kane CLI<br/>same scenarios, patched app"]
+  K2 -->|"denied, owner still OK"| V["Fix verified<br/>(new commit, run id)"]
+  V --> S["Revert patch, rerun<br/>→ red again"]
+  S --> P["Tests proven,<br/>patch restored"]
 ```
-
-1. **Baseline.** The suite must pass on the clean app. If it doesn't, Bugsy stops.
-2. **Probe.** Before spending a Kane run, an HTTP probe confirms the planted bug is live (clean app returns `404 Invoice not found` for another user's invoice; the mutant returns the invoice).
-3. **Experiment.** Kane runs the unchanged suite against the mutant. Verdicts come from Kane's per-test status in the evidence pack, never from the exit code alone.
-4. **Fix loop.** For a survivor, OpenAI reads the mutant, the PRD, the tests and the evidence and writes the missing requirement as a PRD addendum. Kane's assurance flow (`context ingest` → `design tests`) turns it into a test. Bugsy authors it on the clean app, runs it on the mutant, and commits only when it's green then red.
 
 ## Run it
 
 ```bash
-cp .env.example .env            # OPENAI_API_KEY, OPENAI_MODEL
+cp .env.example .env              # OPENAI_API_KEY, OPENAI_MODEL
 kane-cli login --oauth
+codex login                       # patcher; or use --patcher api
 npm install
-npm run demo                    # baseline + 3 mutants, writes bugsy.report.json and report.html
-npx bugsy fix leak_cross_tenant # close one gap through OpenAI + Kane
+npx bugsy scan                    # scenarios → Kane tests → run → findings
+npx bugsy patch S2_other_reads_by_url
+npx bugsy self-check
 ```
 
 ## What's in the repo
 
 | Path | What |
 |---|---|
-| `app/` | Ledger, a 4-page invoices app (Express, EJS, SQLite in memory). Mutants are switched with the `BUG` env var; each changes exactly one behaviour. |
-| `requirements/ledger-prd.md` | The PRD the suite was designed from. It says nothing about one user seeing another's invoice. That omission is the point. |
-| `tests/` | Kane `_test.md` files designed from the PRD, with their replay recordings. |
-| `bugsy/` | The CLI: `run`, `probe`, `fix`, `report`. |
-| `evidence/` | Redacted exports of the Kane runs that matter (results, failures, screenshots). Full packs are never committed; they are on the hack hub. |
-| `bugsy.report.json`, `report.html` | The latest matrix with every Kane execution id. |
+| `app/` | Ledger, a 4-page invoices app (Express, EJS, SQLite in memory). The first commit ships without the ownership check on invoice detail. That is the seeded bug, and we say so. |
+| `requirements/ledger-prd.md` | The PRD Ledger was built from. It never mentions tenant isolation. |
+| `requirements/authz-scenarios.md` | Generated by OpenAI from `bugsy.config.json`'s ownership rule. |
+| `tests/authz/` | Kane `_test.md` files designed from those scenarios, with recordings. |
+| `bugsy/` | The CLI: `scan`, `patch`, `self-check`, `report`. |
+| `evidence/` | Redacted exports of the Kane runs (results, failures, screenshots). Full packs are on the hack hub, never here. |
+| `bugsy.report.json`, `report.html` | Findings with patch diff and before/after Kane run ids. |
 
-## Score and evidence
+## Findings and evidence
 
-Filled in once the runs exist. Every number here links to a Kane execution id.
+Filled in from real runs. Every line links a Kane execution id.
 
 ## Known limitations
 
-- Measures sensitivity to the planted bugs in this catalogue, not the app's overall correctness or security.
-- Ledger only, today. The runner assumes an app that takes `BUG` and `PORT` and answers `/health`.
-- Sequential runs. Each experiment restarts the app so tests never share state.
-- Mutation testing of E2E web suites exists in research (Mutta, 2023). What's new here is doing it on AI-generated Kane suites with a requirement-to-test repair loop.
+- Ledger only, today; one read-leak scenario end to end, list isolation, and (opt-in) one write scenario.
+- Sequential runs, one browser, sign-out/sign-in between accounts.
+- Not a scanner: it checks the rule you state, not every route for every bug.
+- The demo accounts and passwords are seeded test data and are committed on purpose.

@@ -25,222 +25,192 @@
   h1 { font-size: 30px; margin: 0 0 6px; letter-spacing: -0.01em; }
   .sub { color: var(--muted); margin: 0 0 28px; }
   h2 { font-size: 20px; margin: 44px 0 10px; padding-top: 18px; border-top: 1px solid var(--line); }
-  h3 { font-size: 16px; margin: 22px 0 6px; }
   p { margin: 8px 0; }
   .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; margin: 12px 0; }
   .mermaid { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px; margin: 12px 0; overflow-x: auto; }
-  code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13.5px; }
-  code { background: var(--code); color: var(--codefg); padding: 1px 5px; border-radius: 4px; }
-  pre { background: var(--code); color: var(--codefg); padding: 12px 14px; border-radius: 8px; overflow-x: auto; }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13.5px; background: var(--code); color: var(--codefg); padding: 1px 5px; border-radius: 4px; }
   table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 14.5px; }
   th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
   th { color: var(--muted); font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; }
   .tag { display: inline-block; font-size: 12px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); margin-right: 6px; }
-  .ok { color: var(--accent); font-weight: 600; }
-  .warn { color: var(--warn); font-weight: 600; }
+  .ok { color: var(--accent); font-weight: 600; } .warn { color: var(--warn); font-weight: 600; }
   ul { padding-left: 20px; } li { margin: 4px 0; }
-  a { color: var(--accent); }
-  .toc a { margin-right: 14px; white-space: nowrap; }
+  .toc a { margin-right: 14px; white-space: nowrap; color: var(--accent); }
 </style>
 </head>
 <body>
 <main>
-  <h1>Bugsy, build review</h1>
-  <p class="sub">Kane CLI Hack Day SF, 24 Oct 2026. Everything here mirrors the files in the repo; this page just renders the diagrams. Source of truth: <code>BUGSY_SPEC.md</code>.</p>
-  <p class="toc">
-    <a href="#idea">Idea</a><a href="#pieces">Pieces</a><a href="#experiment">One experiment</a><a href="#verdict">Verdicts</a><a href="#fix">Fix loop</a><a href="#hub">Hub counters</a><a href="#day">The day</a><a href="#decide">Decide</a>
-  </p>
+  <h1>Bugsy, build review (v2: security seatbelt)</h1>
+  <p class="sub">Kane CLI Hack Day SF, 24 Oct 2026. Mirrors the repo docs; this page renders the diagrams. Source of truth: <code>BUGSY_SPEC.md</code>.</p>
+  <p class="toc"><a href="#idea">Idea</a><a href="#orig">Originality</a><a href="#pieces">Pieces</a><a href="#scenario">One scenario</a><a href="#verdict">Verdicts</a><a href="#patch">Patch + self-check</a><a href="#hub">Hub</a><a href="#day">Afternoon</a><a href="#decide">Decide</a></p>
 
-  <h2 id="idea">1. The idea</h2>
-  <p>Mutation testing: break the app on purpose in one small way, run the tests, see if anything fails. If nothing fails, the tests are blind to that bug. Bugsy does this on AI-written Kane CLI browser tests, then closes each gap with a test Kane designs from the requirement that was never written.</p>
+  <h2 id="idea">1. The idea, with Alice in it</h2>
+  <p>Alice invoices clients with Ledger. An agent built Ledger from a one-page PRD that never said "a user must not see another user's invoices". So Alice can type <code>/invoices/4</code> and read Bob's $4,000 invoice, and every test is green. Bugsy finds that, fixes it, proves the fix, and proves the proof.</p>
   <div class="mermaid">
 flowchart TB
-  subgraph before["What everyone has today"]
-    A1[AI writes the app] --> A2[AI writes the tests] --> A3[Tests pass] --> A4["All green. Would they fail if something broke?"]
+  subgraph today["How vibe-coded apps ship"]
+    A1["Short PRD"] --> A2["Agent writes the app"] --> A3["Agent writes tests for what the PRD said"] --> A4["All green. Alice can still read Bob's data."]
   end
   subgraph bugsy["What Bugsy adds"]
-    B1[Plant one realistic bug] --> B2[Run the same tests] --> B3{Did any test fail?}
-    B3 -->|yes| B4[Caught]
-    B3 -->|no| B5[Survived: the suite is blind to this bug]
-    B5 --> B6[Name the missing requirement, design the test, prove it]
+    B1["One sentence: who owns what"] --> B2["OpenAI: scenarios, each with an owner control"] --> B3["Kane: run them in a real browser as Bob, then Alice"]
+    B3 --> B4{"Alice saw Bob's invoice?"}
+    B4 -->|yes| B5["Codex patches the server check"] --> B6["Kane reruns: denied, owner still OK"] --> B7["Revert the patch, rerun: red again. Restore."]
+    B4 -->|no| B8["Denied as expected"]
   end
   A4 --> B1
   </div>
 
-  <h2 id="pieces">2. The pieces</h2>
+  <h2 id="orig">2. Where the originality points come from</h2>
+  <div class="card">
+    <ol>
+      <li><b>Spec-driven, not payload-driven.</b> The input is an ownership rule in plain English. OpenAI derives the scenarios from the rule and the routes. Each scenario is a readable requirement before it is a test.</li>
+      <li><b>Every denial has an owner control.</b> "Alice is denied" only counts if "Alice still opens her own invoice" passes. A patch that breaks the app fails. Scanners only look for the leak.</li>
+      <li><b>The seatbelt checks itself.</b> After the fix, Bugsy reverts the patch and reruns. If the scenario doesn't go red, it wasn't testing anything. No security tool in the room proves its own tests.</li>
+    </ol>
+    <p>Plus the Kane angle the rubric names: <b>Kane is the eyes of the patching agent.</b> Codex fixes from Kane's failure record and screenshot, not from an HTTP response.</p>
+  </div>
+
+  <h2 id="pieces">3. The pieces</h2>
   <div class="mermaid">
 flowchart LR
-  subgraph you["Your terminal"]
-    CLI["bugsy<br/>run · probe · fix · report"]
+  subgraph in["You provide"]
+    CFG["bugsy.config.json<br/>app URL · Alice and Bob ·<br/>ownership rule · routes"]
   end
-  subgraph app["Ledger (app under test)"]
-    L["Express + SQLite, port 3000"]
-    SW{{"BUG env var<br/>none / leak_cross_tenant /<br/>pay_no_persist / total_off_by_one"}}
-    H["/health says which bug is live"]
+  subgraph cli["bugsy"]
+    SCAN["scan"] --> PATCH["patch"] --> SELF["self-check"] --> REP["report"]
   end
-  subgraph kane["Kane CLI 0.10.0"]
-    T["testrun run<br/>runs tests/*_test.md in real Chrome"]
-    DZ["context ingest, design tests<br/>requirement to test"]
-    EV[("evidence pack<br/>per-test status, failures, screenshots")]
+  subgraph oai["OpenAI"]
+    GEN["Responses API<br/>rule to scenarios"]
+    CDX["Codex CLI<br/>Kane failure to patch"]
   end
-  subgraph oai["OpenAI (Responses API)"]
-    G["gap analysis:<br/>which requirement was never written?"]
+  subgraph kane["Kane CLI"]
+    DS["design tests from the scenarios"]
+    TR["run in real Chrome"]
+    EV[("evidence pack:<br/>status, failure, screenshot")]
   end
-  subgraph hub["Hack hub"]
-    KR["kanehack report<br/>verified passes, suspected defects, fixes re-verified"]
+  subgraph app["Ledger"]
+    A["commit A, vulnerable"] --> B["commit B, patched"]
   end
-  CLI -->|"start with BUG=…"| L
-  CLI -->|run suite| T
-  T --> EV
-  CLI -->|read verdicts| EV
-  CLI -->|survivor| G
-  G -->|requirement addendum| DZ
-  DZ -->|new _test.md| CLI
-  T -.->|every run wrapped| KR
+  CFG --> SCAN --> GEN --> DS --> TR --> EV
+  EV --> CDX --> B
+  SCAN -. runs on .-> A
+  PATCH -. reruns on .-> B
+  SELF -. reverts, reruns, restores .-> B
   </div>
   <div class="card">
     <table>
-      <tr><th>Layer</th><th>Choice</th><th>Why</th></tr>
-      <tr><td>Runtime</td><td>TypeScript on Node 20 via <code>tsx</code></td><td>No build step, one toolchain</td></tr>
-      <tr><td>Demo app</td><td>Express + EJS + better-sqlite3 (in memory) + express-session</td><td>Server-rendered, stable text, reseeds on every boot</td></tr>
-      <tr><td>CLI</td><td>commander, execa, yaml, adm-zip, zod</td><td>Small and boring</td></tr>
-      <tr><td>Grader</td><td>Kane CLI: testrun, assurance flow, evidence packs</td><td>The event's tool, and the verdict source</td></tr>
-      <tr><td>LLM</td><td>OpenAI Responses API, strict JSON schema, <code>OPENAI_MODEL</code> from .env</td><td>The gate; structured output keeps it predictable</td></tr>
-      <tr><td>Report</td><td>bugsy.report.json + self-contained report.html</td><td>Opens from disk at the judges' table</td></tr>
+      <tr><th>Layer</th><th>Choice</th></tr>
+      <tr><td>Runtime</td><td>TypeScript on Node 20 via <code>tsx</code>, no build step</td></tr>
+      <tr><td>Demo app</td><td>Express + EJS + better-sqlite3 (in memory) + express-session; commit A ships without the owner check on invoice detail</td></tr>
+      <tr><td>Scenarios</td><td>OpenAI Responses API, strict JSON schema, rendered to <code>requirements/authz-scenarios.md</code></td></tr>
+      <tr><td>Patch</td><td>Codex CLI (<code>codex exec</code>), validated with <code>git apply --check</code>; Responses API fallback</td></tr>
+      <tr><td>Tests</td><td>Kane CLI: <code>context ingest</code>, <code>design tests</code>, <code>testrun run</code>, evidence packs; every run through <code>kanehack report</code></td></tr>
+      <tr><td>Report</td><td><code>bugsy.report.json</code> + self-contained <code>report.html</code></td></tr>
     </table>
   </div>
 
-  <h2 id="experiment">3. One experiment</h2>
+  <h2 id="scenario">4. One scenario, start to finish</h2>
   <div class="mermaid">
 sequenceDiagram
-  participant B as bugsy run
-  participant A as Ledger
-  participant P as probe (HTTP)
-  participant K as Kane CLI
-  participant E as evidence pack
-  B->>A: start BUG=none
-  B->>K: run suite (baseline)
-  K-->>E: all passed
-  B->>A: stop, restart BUG=leak_cross_tenant
-  B->>P: as Alice, GET /invoices/4
-  P-->>B: 200 and the page contains "Umbrella" (bug is live)
-  B->>K: run the same suite, healing off
-  K-->>E: all passed
-  B->>E: read per-test status
-  B-->>B: verdict = survived (green on a leaking app)
+  participant K as Kane (one Chrome)
+  participant L as Ledger (commit A)
+  K->>L: sign in as Bob
+  K->>L: open /invoices/4
+  L-->>K: Invoice #4, Client: Umbrella, $4,000.00 (noted)
+  K->>L: sign out
+  K->>L: sign in as Alice
+  K->>L: open /invoices/4
+  L-->>K: Invoice #4, Client: Umbrella, $4,000.00
+  K-->>K: expected "Invoice not found": FAILED, screenshot
+  Note over K,L: S1 control in the same run: Alice opens /invoices/3, sees Initech, passed
   </div>
-  <p>The probe proves the bug is really there before a Kane run is spent. Mutants run one at a time; the app restarts with fresh data before each, so tests never share state.</p>
 
-  <h2 id="verdict">4. How a verdict is decided</h2>
+  <h2 id="verdict">5. How a verdict is decided</h2>
   <div class="mermaid">
 flowchart TD
-  S([Kane run finished]) --> Q1{Probe showed the bug is live?}
-  Q1 -->|no| INV[invalid]
-  Q1 -->|yes| Q2{Any test broken or interrupted?}
-  Q2 -->|yes| INC[inconclusive]
-  Q2 -->|no| Q3{Any test failed?}
-  Q3 -->|no| SUR[survived]
-  Q3 -->|yes| Q4{Failed after step 1, i.e. after reaching the app?}
-  Q4 -->|no| INC
-  Q4 -->|yes| Q5{Same test passed on the clean baseline?}
-  Q5 -->|no| INC
-  Q5 -->|yes| CAU[caught]
+  S([Kane run finished]) --> Q0{Sign-in steps passed, nothing broken or interrupted?}
+  Q0 -->|no| INC[inconclusive: environment, not security]
+  Q0 -->|yes| Q1{Owner control S1 passed?}
+  Q1 -->|no| INC
+  Q1 -->|yes| Q2{Leak scenario S2 passed?}
+  Q2 -->|yes| OK[denied as expected]
+  Q2 -->|no, failed at the denial step| LEAK[leak confirmed]
   </div>
-  <div class="card">
-    <p><b>Catch rate</b> = caught ÷ (caught + survived), over valid and conclusive experiments only. The report always shows inconclusive and invalid counts beside it. Verdicts come from Kane's per-test <code>status</code> and failing step in the evidence pack, never from the exit code alone.</p>
-  </div>
+  <div class="card"><p>A failed sign-in, a timeout or a broken app is never "secure". The control is what makes a denial mean something. <code>bugsy patch</code> commits only when S1, S2 and S3 all pass on the patched app.</p></div>
 
-  <h2 id="fix">5. The fix loop</h2>
+  <h2 id="patch">6. The patch, and the proof of the proof</h2>
   <div class="mermaid">
 sequenceDiagram
   participant U as You
-  participant B as bugsy fix
-  participant O as OpenAI
-  participant K as Kane CLI
-  participant A as Ledger
-  participant H as Hack hub
-  U->>B: bugsy fix leak_cross_tenant
-  B->>O: mutant + PRD + tests + evidence
-  O-->>B: "A user must not view another user's invoice"
-  B->>B: write requirements/addendum-leak_cross_tenant.md
-  B->>K: context ingest, review, design tests --max 1
-  K-->>B: tests/tenant_isolation_test.md
-  B->>A: start BUG=none
-  B->>K: run the new test (authors and records it)
-  K-->>H: passed, verified pass
-  B->>A: restart BUG=leak_cross_tenant
-  B->>K: run the new test
-  K-->>H: failed at "Invoice not found", suspected defect
-  B->>B: commit addendum + test + recordings
-  B->>A: restart BUG=none
-  B->>K: run the suite at the new commit
-  K-->>H: passed, fix re-verified
-  B-->>U: leak_cross_tenant: survived to caught
-  </div>
-  <div class="card">
-    <p><b>Two rules.</b> The new test is always authored on the clean app (authoring it on the mutant would record the leak as normal). The requirement must be general, never "invoice #4", so Kane designs a test of the rule, not the seeded row.</p>
-    <p><b>Fallback.</b> If Kane's design step pauses twice or passes 3 minutes live, Bugsy prints <code>USING PREPARED TEST</code> and uses the one generated in the morning. Said out loud, never hidden.</p>
+  participant B as bugsy
+  participant C as Codex
+  participant L as Ledger
+  participant K as Kane
+  participant H as Hub
+  U->>B: bugsy patch S2
+  B->>C: Kane failure.yaml + screenshot + routes/invoices.ts
+  C-->>B: diff: WHERE id = ? AND owner_id = ?, else 404 "Invoice not found"
+  B->>B: git apply --check, apply, commit B
+  B->>L: restart at commit B
+  B->>K: run S1, S2, S3 (same files)
+  K-->>H: all passed, fix re-verified
+  U->>B: bugsy self-check
+  B->>B: git revert --no-commit B
+  B->>L: restart
+  B->>K: run S2
+  K-->>B: failed, the test detects the leak
+  B->>B: restore B (always, even on error)
+  B-->>U: finding · patch · before/after run ids · self-check
   </div>
 
-  <h2 id="hub">6. What the judges' Proof tab counts</h2>
+  <h2 id="hub">7. What the judges' Proof tab will show</h2>
   <div class="card">
     <table>
-      <tr><th>Bugsy event</th><th>Kane exit</th><th>Hub counter</th></tr>
-      <tr><td>Baseline on clean app</td><td>0</td><td class="ok">verified pass</td></tr>
-      <tr><td>Mutant survived</td><td>0</td><td class="ok">verified pass, on a leaking app (we say so in the demo)</td></tr>
-      <tr><td>Mutant caught</td><td>1</td><td class="warn">suspected defect, confirmed by us as "planted"</td></tr>
-      <tr><td>New test red on mutant</td><td>1</td><td class="warn">suspected defect</td></tr>
-      <tr><td>Suite green at the new commit after fix</td><td>0</td><td class="ok">fix re-verified</td></tr>
-      <tr><td>A real Ledger bug found by the first run</td><td>1 then 0</td><td>suspected defect, then re-verified. Reported, not hidden.</td></tr>
+      <tr><th>Step</th><th>Commit</th><th>Kane exit</th><th>Hub counter</th></tr>
+      <tr><td>S1 control passes on the vulnerable app</td><td>A</td><td>0</td><td class="ok">verified pass</td></tr>
+      <tr><td>S2 leak confirmed</td><td>A</td><td>1</td><td class="warn">suspected defect, confirmed by us</td></tr>
+      <tr><td>Same scenarios after the Codex patch</td><td>B</td><td>0</td><td class="ok">fix re-verified</td></tr>
+      <tr><td>Self-check with the patch reverted</td><td>B (temp)</td><td>1</td><td>labelled self-check</td></tr>
     </table>
-    <p>Every Kane command runs through <code>kanehack report -- kane-cli …</code>. Exit code decides, a run with no completion event never counts as a pass, and the tree should be committed before runs that matter. Full evidence packs go to the hub, never the public repo; the repo carries redacted exports.</p>
+    <p>This is the hub's own model (defect found, fix on a new commit, re-verified), with a real code change in the middle.</p>
   </div>
 
-  <h2 id="day">7. The day</h2>
+  <h2 id="day">8. The afternoon</h2>
   <div class="mermaid">
 gantt
   title Pacific time
   dateFormat HH:mm
   axisFormat %H:%M
   section Gates
-  Idea locked            :milestone, 12:00, 0m
   Mid-eval               :milestone, 14:00, 0m
   Scored eval at table   :crit, 16:00, 60m
   Submissions lock       :milestone, 18:00, 0m
   section Build
-  C0 setup, pair, model, app up   :11:00, 30m
-  C1 first real Kane run, measure :11:30, 45m
-  Ledger app + mutants            :11:15, 105m
-  bugsy run + verdicts + report   :11:30, 150m
-  C2 first survived verdict       :milestone, 13:00, 0m
-  bugsy fix                       :13:00, 90m
-  C3 fix loop end to end          :milestone, 14:30, 0m
-  Full matrix, README, exports    :14:30, 60m
-  Dry run x2, hub housekeeping    :15:30, 30m
+  C0 pair, model, codex login, Ledger at A :13:10, 20m
+  Ledger app                       :13:10, 50m
+  C1 S1 and S2 authored on A       :14:00, 15m
+  bugsy scan + verdicts            :13:30, 75m
+  C2 scan end to end               :milestone, 14:45, 0m
+  bugsy patch + self-check         :14:15, 60m
+  C3 patch + self-check timed      :milestone, 15:15, 0m
+  README, exports, hub, Submit tab :15:15, 25m
+  Dry run x2                       :15:40, 20m
   section Launch
-  Video, posts, blog, deck        :17:00, 60m
-  </div>
-  <div class="card">
-    <table>
-      <tr><th>Checkpoint</th><th>Go</th><th>No-go fallback</th></tr>
-      <tr><td><b>C1</b> one real Kane run on the clean app, measure credits and time</td><td>≤ 4 min and ≤ 2,000 credits per authored test</td><td>2 mutants, 3 tests, no opt-ins</td></tr>
-      <tr><td><b>C2</b> first survived verdict read from the pack</td><td>build fix</td><td>fix the verdict engine first; it is the product</td></tr>
-      <tr><td><b>C3</b> fix loop end to end, timed</td><td>≤ 3 min, live at 16:00</td><td>prepared test at 16:00, said aloud</td></tr>
-    </table>
+  Video, posts, blog, deck         :17:00, 60m
   </div>
 
-  <h2 id="decide">8. What you decide now</h2>
+  <h2 id="decide">9. What you decide now</h2>
   <div class="card">
     <ul>
-      <li><span class="tag">scope</span> Default matrix is 3 mutants (leak, pay-no-persist, total-off-by-one). Two more are opt-in.</li>
+      <li><span class="tag">scope</span> Three scenarios in the MVP: S1 owner control, S2 read by URL (the leak), S3 list isolation. S4 write check is opt-in after C3.</li>
+      <li><span class="tag">fixture</span> Commit A ships vulnerable on purpose and we say so. No hidden switch; git is the fixture.</li>
+      <li><span class="tag">patcher</span> Codex CLI by default, Responses API fallback, prepared four-line patch as last resort, announced.</li>
       <li><span class="tag">credits</span> Only you run Kane against credits. Agents build against recorded output from C1.</li>
-      <li><span class="tag">model</span> Pick <code>OPENAI_MODEL</code> from what your key lists; it goes in <code>.env</code>.</li>
-      <li><span class="tag">honesty</span> The PRD omits tenant isolation on purpose, and we say so. No predicted score in public text.</li>
-      <li><span class="tag">setup</span> In your own terminal: the hub installer, <code>kanehack pair</code>, <code>kanehack consent yes</code>.</li>
+      <li><span class="tag">hub</span> Update the idea text in the hub to the v2 one-liner. Pair, consent, confirm the defect, tick runs, Submit tab fields.</li>
     </ul>
   </div>
 
-  <p class="sub" style="margin-top:40px">Files: <code>BUGSY_SPEC.md</code> · <code>requirements/ledger-prd.md</code> · <code>docs/how-it-works.md</code> · <code>docs/demo-script.md</code> · <code>docs/launch-brief.md</code> · <code>docs/posts.md</code></p>
+  <p class="sub" style="margin-top:40px">Files: <code>BUGSY_SPEC.md</code> · <code>requirements/ledger-prd.md</code> · <code>docs/how-it-works.md</code> · <code>docs/demo-script.md</code> · <code>docs/launch-brief.md</code> · <code>docs/posts.md</code> · <code>docs/change-recommendations.md</code></p>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js"></script>
 <script>
