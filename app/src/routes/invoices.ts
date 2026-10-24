@@ -38,8 +38,7 @@ invoices.post("/invoices", (req, res) => {
 });
 
 invoices.get("/invoices/:id", (req, res) => {
-  // NOTE: no ownership check here (seeded for the demo)
-  const row = db.prepare("SELECT * FROM invoices WHERE id = ?").get(req.params.id) as Invoice | undefined;
+  const row = db.prepare("SELECT * FROM invoices WHERE id = ? AND owner_id = ?").get(req.params.id, req.session.userId) as Invoice | undefined;
   if (!row) return res.status(404).render("not-found");
   const banner = req.session.banner ?? null;
   delete req.session.banner;
