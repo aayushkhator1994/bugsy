@@ -30,9 +30,11 @@ export async function selfCheck(ctx: Ctx, scenarioArg: string | undefined, o: Se
 
   // Bugsy's own outputs (report, redacted evidence, scenarios doc) may be uncommitted; anything else must be clean.
   const exportDir = ctx.cfg.evidence_export_dir.replace(/\/+$/, '') + '/';
+  const testsDir = ctx.cfg.tests_dir.replace(/\/+$/, '');
+  const recordingDirs = scenarios.map((s) => `${testsDir}/output-${s.id}/`);
   const ownOutput = (line: string) => {
     const p = line.slice(3).replace(/^"|"$/g, '');
-    return p === 'bugsy.report.json' || p === 'report.html' || p === 'requirements/authz-scenarios.md' || p.startsWith(exportDir) || p === exportDir;
+    return p === 'bugsy.report.json' || p === 'report.html' || p === 'requirements/authz-scenarios.md' || p.startsWith(exportDir) || p === exportDir || recordingDirs.some((dir) => p.startsWith(dir));
   };
   const before = await git.porcelain(ctx.root);
   const foreign = before.filter((l) => !ownOutput(l));
