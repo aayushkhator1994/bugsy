@@ -1,7 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import AdmZip from 'adm-zip';
-import { mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { stringify as yaml } from 'yaml';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { judgeRun, type Ctx, type RunResult } from '../src/run.ts';
@@ -32,6 +34,7 @@ function fixture(opts: {
   missing?: boolean;
   errors?: string[];
   invalidPlan?: boolean;
+  rca?: string;
 } = {}) {
   const root = mkdtempSync(join(tmpdir(), 'bugsy-judge-'));
   const cfg = parseConfig({
@@ -46,7 +49,7 @@ function fixture(opts: {
     path: `tests/authz/${s.id}_test.md`,
     test_id: s.id,
     status: memberStatuses[s.id] as KaneMember['status'],
-    ...(memberStatuses[s.id] === 'failed' ? { failure: denialFailure } : {}),
+    ...(memberStatuses[s.id] === 'failed' ? { failure: opts.rca ? { step_index: 5, message: 'assertion_failed: @ step 5' } : denialFailure } : {}),
   }));
   const packPath = join(root, 'run.evidence');
   const zip = new AdmZip();
@@ -61,6 +64,30 @@ function fixture(opts: {
     zip.addFile(`tests/${s.id}/result.yaml`, Buffer.from(result));
     if (opts.duplicate === s.id) zip.addFile('tests/duplicate/result.yaml', Buffer.from(result));
     if (status === 'failed') zip.addFile(`tests/${s.id}/steps/5-denial/failure.yaml`, Buffer.from('expected: Invoice not found\nactual: Client: Umbrella\n'));
+    if (s.id === S2 && opts.rca) {
+      const md = readFileSync(join(import.meta.dirname, '../../tests/authz', `${S2}_test.md`), 'utf8');
+      mkdirSync(join(root, 'tests/authz'), { recursive: true });
+      writeFileSync(join(root, 'tests/authz', `${S2}_test.md`), md);
+      zip.addFile(`tests/${s.id}/test.md`, Buffer.from(md));
+      zip.addFile(`tests/${s.id}/result.yaml`, Buffer.from(yaml({
+        path: `tests/authz/${s.id}_test.md`, status,
+        external_id: { execution_id: opts.rca === 'wrong-execution' ? 'another-run' : 'run' },
+        definition: { sha256: 'sha256:' + (opts.rca === 'definition-mismatch' ? 'wrong' : createHash('sha256').update(md).digest('hex')) },
+        steps: [
+          { id: '3-6', ordinal: 21, status: opts.rca === 'prior-broken' ? 'broken' : 'passed', kind: 'click' },
+          { id: '4-5', ordinal: 22, status: 'failed', kind: opts.rca === 'wrong-kind' ? 'navigate' : 'assert' },
+        ],
+      })));
+      zip.addFile(`tests/${s.id}/steps/22-4-5/failure.yaml`, Buffer.from(yaml({
+        step: '4-5', status: 'broken',
+        error: { type: 'replay_failure', message: opts.rca === 'timeout' ? 'timeout' : opts.rca === 'wrong-step' ? 'assertion_failed: @ step 4' : 'assertion_failed: @ step 5' },
+        ...(opts.rca === 'no-triage' ? {} : { triage: {
+          status: 'triaged', by: { kind: 'agent' },
+          rca: { category: opts.rca === 'other-category' ? 'infra/network' : 'automation_bug/test_data_issue', root_cause: 'Invoice unexpectedly present' },
+        } }),
+      })));
+      if (opts.rca !== 'no-screenshot') zip.addFile(`tests/${s.id}/steps/22-4-5/screenshot.jpg`, Buffer.from('ffd8ffe0', 'hex'));
+    }
   }
   if (opts.corrupt) writeFileSync(packPath, 'not a zip');
   else if (!opts.missing) zip.writeZip(packPath);
@@ -163,4 +190,31 @@ test('a control failure still prevents a deny-everyone patch from committing', (
   assert.equal(outcomes[1]!.verdict, 'inconclusive');
   assert.equal(outcomes[2]!.verdict, 'inconclusive');
   assert.equal(patchMayCommit(outcomes), false);
+});
+
+test('recorded denial assertion confirms leak despite later RCA automation-bug classification', () => {
+  const f = fixture({ overall: 'failed', exit: 1, memberStatuses: { [S2]: 'failed' }, packStatuses: { [S2]: 'broken' }, rca: 'valid' });
+  const packHash = createHash('sha256').update(readFileSync(f.run.pack_path!)).digest('hex');
+  const { outcomes, exported } = judgeRun(f.ctx, f.run, scenarios);
+  const leak = outcomes[1]!;
+  assert.equal(leak.verdict, 'leak_confirmed');
+  assert.match(leak.evidence_note!, /later RCA.*automation_bug\/test_data_issue.*raw evidence status: broken/);
+  assert.equal(exported!.tests.find((t) => t.name === S2)!.status, 'broken');
+  assert.match(readFileSync(join(f.ctx.root, 'evidence/run/S2/result.yaml'), 'utf8'), /status: broken/);
+  assert.equal(createHash('sha256').update(readFileSync(f.run.pack_path!)).digest('hex'), packHash);
+  assert.equal(selfCheckPassed(outcomes, S2), true);
+  assert.equal(patchMayCommit(outcomes), false);
+});
+
+test('RCA does not excuse timeouts, other broken steps, uncorrelated failures or missing proof', () => {
+  for (const rca of ['wrong-kind', 'prior-broken', 'timeout', 'wrong-step', 'wrong-execution', 'definition-mismatch', 'no-screenshot', 'no-triage', 'other-category']) {
+    const outcomes = fixture({ overall: 'failed', exit: 1, memberStatuses: { [S2]: 'failed' }, packStatuses: { [S2]: 'broken' }, rca }).outcomes();
+    assert.equal(outcomes[1]!.verdict, 'inconclusive', rca);
+    assert.equal(selfCheckPassed(outcomes, S2), false, rca);
+  }
+  const broken = fixture({ overall: 'failed', exit: 1, memberStatuses: { [S1]: 'broken', [S2]: 'failed' }, packStatuses: { [S2]: 'broken' }, rca: 'valid' }).outcomes();
+  assert.equal(selfCheckPassed(broken, S2), false);
+  const green = fixture({ packStatuses: { [S2]: 'broken' }, rca: 'valid' }).outcomes();
+  assert.equal(green[1]!.verdict, 'inconclusive');
+  assert.equal(patchMayCommit(green), false);
 });

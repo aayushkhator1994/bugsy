@@ -199,6 +199,8 @@ Fixtures, routes and strings as in `requirements/ledger-prd.md` (unchanged, stil
 
 A failing sign-in, a timeout, or a broken app is never "secure". The control is what makes a denial mean something.
 
+Execution outcomes and later RCA classifications are separate. Kane replay can record a failed assertion, then classify the test as `broken` because RCA suspects an automation bug. Bugsy may use the recorded assertion failure only when the completed stream says `failed`, the pack is correlated to that execution with a verified embedded definition hash, every preceding recorded step passed, the final step is a failed assertion with a screenshot, and the replay-failure step matches the stream. An agent RCA in the `automation_bug/` category is retained as a separate note. The denial-step and paired-control rules above still apply. Raw pack statuses and sealed evidence are never rewritten; genuine execution failures remain inconclusive.
+
 `bugsy patch` is allowed to commit only when, on the patched app: S2 `denied_as_expected` **and** S1 `passed` **and** S3 `passed`. Self-check passes when S2 on the reverted app is `leak_confirmed`.
 
 ---

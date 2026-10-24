@@ -4,6 +4,7 @@
 import AdmZip from 'adm-zip';
 import { mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { basename, join, relative, resolve } from 'node:path';
+import { createHash } from 'node:crypto';
 import { parse as parseYaml } from 'yaml';
 import type { EvidenceTest, KaneMember } from './types.ts';
 
@@ -104,6 +105,33 @@ function failedStep(t: PackTest): number | undefined {
   return withFailure.length ? Math.min(...withFailure) : undefined;
 }
 
+/** Separate the recorded assertion outcome from the later model's automation-bug diagnosis.
+ * This never turns a broken test into a pass, and never changes the sealed pack or raw status.
+ */
+function assertionBeforeRca(t: PackTest, member: KaneMember | undefined, executionId: string): EvidenceTest['assertion_before_rca'] {
+  if (testStatus(t) !== 'broken' || member?.status !== 'failed') return undefined;
+  if (t.result?.external_id?.execution_id !== executionId || !t.testMd) return undefined;
+  const hash = 'sha256:' + createHash('sha256').update(t.testMd).digest('hex');
+  if (t.result?.definition?.sha256 !== hash) return undefined;
+  const steps: any[] = Array.isArray(t.result?.steps) ? t.result.steps : [];
+  const last = steps.at(-1);
+  if (steps.length < 2 || last?.status !== 'failed' || last.kind !== 'assert') return undefined;
+  if (steps.slice(0, -1).some((s) => s?.status !== 'passed')) return undefined;
+  const failure = t.steps.get(Number(last.ordinal));
+  const f = failure?.failure;
+  const assertion = /^assertion_failed:\s*@ step (\d+)$/;
+  const step = assertion.exec(String(f?.error?.message ?? ''))?.[1];
+  if (!step || !Number.isInteger(member.failure?.step_index) || Number(step) !== member.failure?.step_index) return undefined;
+  if (!assertion.test(member.failure?.message ?? '') || member.failure?.message !== f.error.message) return undefined;
+  const category = f?.triage?.rca?.category;
+  if (f?.error?.type !== 'replay_failure' || f.step !== last.id || f.status !== 'broken'
+    || f.triage?.status !== 'triaged' || f.triage?.by?.kind !== 'agent'
+    || typeof category !== 'string' || !category.startsWith('automation_bug/')
+    || typeof f.triage?.rca?.root_cause !== 'string'
+    || !failure?.screenshot) return undefined;
+  return { step_index: Number(step), rca_category: category };
+}
+
 /** Which member (by file name) does this pack test belong to? */
 export function matchMember(t: { id: string; result?: any; testMd?: string }, members: KaneMember[]): KaneMember | undefined {
   const byId = members.find((m) => m.test_id && m.test_id === t.id);
@@ -177,6 +205,8 @@ export function exportEvidence(opts: {
       status: testStatus(t),
       screenshot,
     };
+    const assertion = assertionBeforeRca(t, member, opts.executionId);
+    if (assertion) rec.assertion_before_rca = assertion;
     if (fstep !== undefined) rec.failed_step = fstep;
     if (f !== undefined || (fstep !== undefined && t.steps.get(fstep)?.failureText)) {
       rec.failure = {

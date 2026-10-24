@@ -86,7 +86,7 @@ export function judgeRun(ctx: Ctx, run: RunResult, scenarios: Scenario[]): Judge
       if (t) {
         const f = t.failure;
         const detail = f?.expected || f?.actual ? `expected "${f.expected ?? '?'}", saw "${f.actual ?? '?'}"` : f?.error;
-        evidence[s.id] = { status: t.status, failed_step: t.failed_step, screenshot: t.screenshot, error: detail };
+        evidence[s.id] = { status: t.status, assertion_before_rca: t.assertion_before_rca, failed_step: t.failed_step, screenshot: t.screenshot, error: detail };
       }
     }
   }
@@ -101,6 +101,7 @@ export function judgeRun(ctx: Ctx, run: RunResult, scenarios: Scenario[]): Judge
     && !run.state.plan_invalid && run.state.errors.length === 0;
   if (!completed) ctx.log('  Kane run was incomplete, cancelled, or inconsistent: every verdict is inconclusive');
   const outcomes = evaluate({ scenarios, members: run.members, packPresent: !!exported, completed, steps, evidence });
+  for (const outcome of outcomes) if (outcome.evidence_note) ctx.log(`  ${outcome.scenario}: ${outcome.evidence_note}`);
   return { outcomes, exported };
 }
 

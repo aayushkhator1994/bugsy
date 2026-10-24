@@ -82,6 +82,8 @@ export interface EvidenceTest {
   /** file stem of the definition, e.g. S2_other_reads_by_url (best effort) */
   name?: string;
   status: string;
+  /** Raw status above is preserved. A replay assertion can be classified broken by later RCA. */
+  assertion_before_rca?: { step_index: number; rca_category: string };
   failed_step?: number;
   failure?: {
     error?: string;
@@ -106,6 +108,7 @@ export interface ScenarioOutcome {
   failed_step?: number;
   failure_message?: string;
   screenshot?: string;
+  evidence_note?: string;
 }
 
 // ---------- report (bugsy.report.json) ----------

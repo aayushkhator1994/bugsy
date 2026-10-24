@@ -175,6 +175,7 @@ ${
   sc
     ? `<ol class="steps">${steps}</ol>
 <p class="${ok ? 'ok' : 'badtxt'}">${ok ? 'The test fails when the fix is removed, so it really catches this leak.' : inconclusive ? 'The revert proof is inconclusive. The evidence does not establish whether the test detects the leak.' : 'The test did not detect the leak with the fix removed. Do not trust this test.'}</p>
+${sc.evidence_note ? `<p class="muted">${esc(sc.evidence_note)}</p>` : ''}
 <div class="meta"><span>tests_detect_leak: <b>${ok ? 'yes' : 'no'}</b></span><span>Kane execution ${code(sc.execution_id)}</span></div>`
     : '<p class="muted">Run <code>bugsy self-check</code> to revert the patch and prove the test fails without it.</p>'
 }</section>`;

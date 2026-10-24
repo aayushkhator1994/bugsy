@@ -79,6 +79,7 @@ export async function selfCheck(ctx: Ctx, scenarioArg: string | undefined, o: Se
 
   if (finding) {
     finding.self_check = { execution_id: run!.execution_id, [label]: leak.status, tests_detect_leak: detected, leak_only: !!o.leakOnly };
+    if (leak.evidence_note) finding.self_check.evidence_note = leak.evidence_note;
   }
   pushHistory(report, {
     phase: 'self-check',

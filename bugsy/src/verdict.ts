@@ -1,9 +1,10 @@
 // BUGSY_SPEC.md §7: per-scenario verdicts from Kane's member outcomes. Pure; never reads the exit code.
 import { basename } from 'node:path';
-import type { KaneMember, Scenario, ScenarioOutcome, Verdict } from './types.ts';
+import type { EvidenceTest, KaneMember, Scenario, ScenarioOutcome, Verdict } from './types.ts';
 
 export interface ScenarioEvidence {
   status: string;
+  assertion_before_rca?: EvidenceTest['assertion_before_rca'];
   failed_step?: number;
   screenshot?: string;
   error?: string;
@@ -112,12 +113,15 @@ export function judgeLeak(
 export function evaluate(input: VerdictInput): ScenarioOutcome[] {
   const anyBroken = input.members.some((m) => m.status === 'broken' || m.status === 'interrupted');
   const byId = new Map(input.scenarios.map((s) => [s.id, s]));
+  const rcaAssertion = (result: ScenarioEvidence, member: KaneMember) => result.status === 'broken'
+    && member.status === 'failed' && result.assertion_before_rca?.step_index === member.failure?.step_index
+    && result.assertion_before_rca !== undefined;
   const evidenceIssue = (id: string, member: KaneMember | undefined): string | undefined => {
     if (!input.packPresent) return 'evidence pack missing or unreadable';
     const result = input.evidence?.[id];
     if (!result) return `no matching evidence result for ${id}`;
     if (!member) return `no Kane result for ${id}`;
-    if (result.status !== member.status) return `evidence status for ${id} does not match the Kane result`;
+    if (result.status !== member.status && !rcaAssertion(result, member)) return `evidence status for ${id} does not match the Kane result`;
     if (member.status === 'passed' && result.failed_step !== undefined) return `evidence for ${id} contains a failed step despite a passing result`;
     return undefined;
   };
@@ -135,6 +139,9 @@ export function evaluate(input: VerdictInput): ScenarioOutcome[] {
     if (input.completed !== true) return { ...base, reason: 'run incomplete, cancelled, or inconsistent' };
     const ownIssue = evidenceIssue(s.id, m);
     if (ownIssue) return { ...base, reason: ownIssue };
+    if (ev && m && rcaAssertion(ev, m)) {
+      base.evidence_note = `Recorded assertion failed; later RCA classified it as ${ev.assertion_before_rca!.rca_category} (raw evidence status: broken).`;
+    }
     if (s.kind === 'leak_check' && s.control_id) {
       const control = memberFor(byId.get(s.control_id) ?? ({ id: s.control_id } as Scenario), input.members);
       const controlIssue = evidenceIssue(s.control_id, control);

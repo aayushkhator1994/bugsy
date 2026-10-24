@@ -96,7 +96,7 @@ kanehack status
 
 ## Observed replay limitation and final restored check
 
-See [the live results](e2e-results.md) and `evidence/provenance.json` before repeating paid work. A replay can report S2 `failed` in terminal output but `broken` in the sealed evidence on Kane 0.10.0-rc.3. That is **inconclusive**, even if the screenshot resembles the original leak. Keep the evidence unchanged and report the execution ID to a mentor; do not turn on healing or redesign the test to obtain a green result.
+See [the live results](e2e-results.md) and `evidence/provenance.json` before repeating paid work. A replay can report S2 `failed` in terminal output but `broken` in the sealed evidence on Kane 0.10.0-rc.3 because later RCA classified it as an automation bug. Bugsy separates this from a correlated recorded assertion failure, retaining both statuses and an evidence note. Only the guarded case described in BUGSY_SPEC.md section 7 can confirm the leak; other disagreements remain inconclusive. Keep the evidence unchanged; do not turn on healing or redesign the test to obtain a green result.
 
 After every self-check, verify the ownership filter was restored and run all three unchanged tests:
 
