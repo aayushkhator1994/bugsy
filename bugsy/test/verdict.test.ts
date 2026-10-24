@@ -112,3 +112,24 @@ test('bare expected literals from OpenAI anchor the denial without accepting unr
   assert.equal(judgeLeak(scenario, m('S2', 'failed', leakFail), m('S1', 'passed'), { packPresent: true, anyBroken: false }).verdict, 'leak_confirmed');
   assert.equal(judgeLeak(scenario, m('S2', 'failed', { message: 'Navigation failed: connection reset', step_index: 2 }), m('S1', 'passed'), { packPresent: true, anyBroken: false }).verdict, 'inconclusive');
 });
+
+test('a denial that expects the sign-in page ("Sign in") is not mistaken for a sign-in step', () => {
+  const S4 = {
+    id: 'S4_signed_out_back_button', kind: 'leak_check' as const, control_id: 'S1_owner_reads_own',
+    title: 'Back after sign-out does not show account pages', requirement: 'r',
+    steps: ['Sign in as Alice', 'Open /invoices/3', 'Sign out', 'Press the browser Back button'],
+    expected: ["The page shows 'Sign in'", "The text 'Client: Initech' is not visible"],
+  };
+  const steps = [
+    'Step 1 At the Ledger site {{start_url}}, sign in as Alice using {{alice_username}} and {{alice_password}}.',
+    "Step 2 In Ledger, open Alice's /invoices/3, then assert the owned invoice page shows 'Client: Initech'.",
+    "Step 3 Sign out of Ledger by clicking the 'Sign out' button.",
+    "Step 4 Go back one page in the browser history, then assert the page shows 'Sign in' and the text 'Client: Initech' is not visible.",
+  ];
+  const fail = { message: 'Final verification failed: the page shows "Sign in" and the text "Client: Initech" is not visible', step_index: 4 };
+  const leak = judgeLeak(S4, m('S4_signed_out_back_button', 'failed', fail), m('S1_owner_reads_own', 'passed'), { packPresent: true, anyBroken: false, steps });
+  assert.equal(leak.verdict, 'leak_confirmed');
+  // step_index base is not pinned down: a 0-based index at the same denial step must also count
+  const zeroBased = judgeLeak(S4, m('S4_signed_out_back_button', 'failed', { ...fail, step_index: 3 }), m('S1_owner_reads_own', 'passed'), { packPresent: true, anyBroken: false, steps });
+  assert.equal(zeroBased.verdict, 'leak_confirmed');
+});

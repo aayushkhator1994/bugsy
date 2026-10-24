@@ -60,6 +60,11 @@ export interface PatchPromptInput {
   sourceFiles: { path: string; content: string }[];
 }
 
+/** Scenarios whose denial is "Invoice not found" get the specific ownership-check instruction. */
+function ownershipFix(s: Scenario): boolean {
+  return s.expected.some((e) => /invoice not found/i.test(e));
+}
+
 export function buildPatchPrompt(i: PatchPromptInput, opts: { forApi?: boolean } = {}): string {
   const files = i.sourceFiles
     .map((f) => `### ${f.path}\n\`\`\`\n${f.content}\n\`\`\``)
@@ -86,7 +91,9 @@ Source files:
 ${files}
 
 Task:
-- Fix this on the SERVER side with the smallest possible change: add the owner check to the invoice detail query (only return the invoice when it belongs to the signed-in user) and render the 404 "Invoice not found" page when there is no matching row.
+- ${ownershipFix(i.scenario)
+    ? 'Fix this on the SERVER side with the smallest possible change: add the owner check to the invoice detail query (only return the invoice when it belongs to the signed-in user) and render the 404 "Invoice not found" page when there is no matching row.'
+    : 'Fix this on the SERVER side with the smallest possible change that makes the requirement hold for what the browser did, including how the server responds to the browser.'}
 - Touch nothing else. Do not modify tests, views beyond the 404 message, or unrelated routes. Do not edit files yourself; only produce the diff.
 - Diff paths must be relative to the repository root, with a/ and b/ prefixes, applicable with "git apply".
 - ${outputRule}`;

@@ -66,3 +66,12 @@ test('patch prompt includes requirement, failure, screenshot, source; codex args
   const a = codexArgs('/tmp/o.txt');
   assert.deepEqual(a.slice(0, 1), ['exec']); assert.ok(a.includes('read-only') && a.at(-1) === '-');
 });
+test('patch prompt asks for the ownership check only for "Invoice not found" scenarios', () => {
+  const src = [{ path: 'app/src/server.ts', content: 'CODE' }];
+  const s2 = { ...parseScenarios(good)[1]!, expected: ["The page shows 'Invoice not found'"] };
+  assert.match(buildPatchPrompt({ scenario: s2, failure: { message: 'm' } as never, sourceFiles: src }), /owner check/);
+  const s4 = { ...s2, id: 'S4_signed_out_back_button', expected: ["The page shows 'Sign in'", "The text 'Client: Initech' is not visible"] };
+  const p = buildPatchPrompt({ scenario: s4, failure: { message: 'm' } as never, sourceFiles: src });
+  assert.doesNotMatch(p, /owner check/);
+  assert.match(p, /SERVER side/);
+});
