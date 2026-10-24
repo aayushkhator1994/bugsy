@@ -1,0 +1,13 @@
+generated: 2026-10-24T22:59:01.246Z
+totals:
+  failures: 1
+  triaged: 1
+  untriaged: 0
+failures:
+  - test: s4-signed-out-back-button-e0288718
+    ordinal: 14
+    step: 3-3
+    status: broken
+    path: tests/s4-signed-out-back-button-e0288718/steps/14-3-3/failure.yaml
+    title: Final assertion ran on invoice page
+    triage_status: triaged

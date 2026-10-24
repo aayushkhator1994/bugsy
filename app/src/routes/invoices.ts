@@ -4,6 +4,7 @@ import { db, money, type Invoice } from "../db.js";
 export const invoices = Router();
 
 function requireLogin(req: Request, res: Response, next: NextFunction) {
+  res.set("Cache-Control", "no-store");
   if (!req.session.userId) return res.redirect("/login");
   next();
 }

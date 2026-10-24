@@ -4,7 +4,7 @@
     "url": "http://localhost:3100",
     "port": 3100,
     "health": "/health",
-    "source_globs": ["app/src/routes/**"]
+    "source_globs": ["app/src/routes/**", "app/src/server.ts"]
   },
   "accounts": {
     "alice": { "email": "alice@ledger.test", "password": "alice123", "owns": [1, 2, 3] },

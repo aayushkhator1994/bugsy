@@ -1,7 +1,7 @@
 {
   "version": 1,
   "app": "Ledger",
-  "generated_at": "2026-10-24T22:30:06.671Z",
+  "generated_at": "2026-10-24T22:59:06.345Z",
   "findings": [
     {
       "scenario": "S2_other_reads_by_url",
@@ -47,9 +47,20 @@
     {
       "scenario": "S3_list_isolation",
       "verdict": "denied_as_expected",
-      "commit": "bb5c31ce43bbc59adbd62013de6b6c35bd9b7f5c",
+      "commit": "7a533f5e83d12f080d21c556cc08150ef6e61695",
       "kane": {
-        "execution_id": "5c6d42cf-98be-4d8e-ab22-f0ec47f85955"
+        "execution_id": "1fac2fc6-35b8-4c92-99bb-e95af88fa683"
+      }
+    },
+    {
+      "scenario": "S4_signed_out_back_button",
+      "verdict": "leak_confirmed",
+      "commit": "7a533f5e83d12f080d21c556cc08150ef6e61695",
+      "kane": {
+        "execution_id": "1fac2fc6-35b8-4c92-99bb-e95af88fa683",
+        "failed_step": 4,
+        "screenshot": "evidence/1fac2fc6-35b8-4c92-99bb-e95af88fa683/S4/14-screenshot.jpg",
+        "failure_message": "Final verification failed: \"the page shows 'Sign in' and the text 'Client: Initech' is not visible\""
       }
     }
   ],
@@ -232,6 +243,47 @@
           "screenshot": "evidence/6173e8eb-e879-4feb-ac28-2654b42991f9/S2/22-screenshot.jpg"
         }
       ]
+    },
+    {
+      "at": "2026-10-24T22:59:06.345Z",
+      "phase": "scan",
+      "commit": "7a533f5e83d12f080d21c556cc08150ef6e61695",
+      "execution_id": "1fac2fc6-35b8-4c92-99bb-e95af88fa683",
+      "exit_code": 1,
+      "summary": "leak confirmed: S4_signed_out_back_button",
+      "outcomes": [
+        {
+          "scenario": "S1_owner_reads_own",
+          "kind": "control",
+          "status": "passed",
+          "verdict": "control_passed",
+          "reason": "passed"
+        },
+        {
+          "scenario": "S2_other_reads_by_url",
+          "kind": "leak_check",
+          "status": "passed",
+          "verdict": "denied_as_expected",
+          "reason": "denied, and the owner control passed"
+        },
+        {
+          "scenario": "S3_list_isolation",
+          "kind": "leak_check",
+          "status": "passed",
+          "verdict": "denied_as_expected",
+          "reason": "denied, and the owner control passed"
+        },
+        {
+          "scenario": "S4_signed_out_back_button",
+          "kind": "leak_check",
+          "status": "failed",
+          "verdict": "leak_confirmed",
+          "reason": "failed at step 4 (denial); control passed",
+          "failed_step": 4,
+          "failure_message": "Final verification failed: \"the page shows 'Sign in' and the text 'Client: Initech' is not visible\"",
+          "screenshot": "evidence/1fac2fc6-35b8-4c92-99bb-e95af88fa683/S4/14-screenshot.jpg"
+        }
+      ]
     }
   ],
   "scenarios": [
@@ -285,11 +337,28 @@
         "Initech"
       ],
       "control_id": "S1_owner_reads_own"
+    },
+    {
+      "id": "S4_signed_out_back_button",
+      "kind": "leak_check",
+      "control_id": "S1_owner_reads_own",
+      "title": "Signed out, but still visible: Back after sign-out must not show account pages",
+      "requirement": "After a user signs out, pressing the browser Back button must not show any page from their account; the sign-in page is shown instead.",
+      "steps": [
+        "Sign in as Alice",
+        "Open /invoices/3 and confirm it shows Client: Initech",
+        "Click Sign out",
+        "Press the browser Back button"
+      ],
+      "expected": [
+        "The page shows 'Sign in'",
+        "The text 'Client: Initech' is not visible"
+      ]
     }
   ],
   "scan": {
-    "commit": "bb5c31ce43bbc59adbd62013de6b6c35bd9b7f5c",
-    "execution_id": "5c6d42cf-98be-4d8e-ab22-f0ec47f85955",
+    "commit": "7a533f5e83d12f080d21c556cc08150ef6e61695",
+    "execution_id": "1fac2fc6-35b8-4c92-99bb-e95af88fa683",
     "used_prepared_tests": false,
     "outcomes": [
       {
@@ -312,6 +381,16 @@
         "status": "passed",
         "verdict": "denied_as_expected",
         "reason": "denied, and the owner control passed"
+      },
+      {
+        "scenario": "S4_signed_out_back_button",
+        "kind": "leak_check",
+        "status": "failed",
+        "verdict": "leak_confirmed",
+        "reason": "failed at step 4 (denial); control passed",
+        "failed_step": 4,
+        "failure_message": "Final verification failed: \"the page shows 'Sign in' and the text 'Client: Initech' is not visible\"",
+        "screenshot": "evidence/1fac2fc6-35b8-4c92-99bb-e95af88fa683/S4/14-screenshot.jpg"
       }
     ]
   }

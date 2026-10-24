@@ -54,3 +54,21 @@ Expected
 - Initech
 
 Control: S1_owner_reads_own
+
+## S4_signed_out_back_button: Signed out, but still visible: Back after sign-out must not show account pages
+
+After a user signs out, pressing the browser Back button must not show any page from their account; the sign-in page is shown instead.
+
+Steps
+
+1. Sign in as Alice
+2. Open /invoices/3 and confirm it shows Client: Initech
+3. Click Sign out
+4. Press the browser Back button
+
+Expected
+
+- The page shows 'Sign in'
+- The text 'Client: Initech' is not visible
+
+Control: S1_owner_reads_own

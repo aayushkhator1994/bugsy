@@ -24,6 +24,12 @@ export interface VerdictInput {
 }
 
 const SIGN_IN_RE = /\b(sign|log)\s*-?\s*in\b|\bcredentials?\b|\bpassword\b/i;
+const QUOTED_RE = /["'‘’“”][^"'‘’“”]{2,}["'‘’“”]/g;
+
+/** A sign-in action, not a step that merely expects the quoted text "Sign in" on the page. */
+function isSignIn(text: string): boolean {
+  return SIGN_IN_RE.test(text.replace(QUOTED_RE, ' '));
+}
 
 /** Expected literal text, optionally quoted in a sentence, that anchors the denial assertion. */
 export function denialMarkers(s: Scenario): string[] {
@@ -88,7 +94,7 @@ export function judgeLeak(
   let atDenial: boolean;
   if (steps && steps.length) {
     // the denial is asserted after the last sign-in (the other user's session)
-    const lastSignIn = steps.reduce((acc, t, i) => (SIGN_IN_RE.test(t) ? i : acc), -1);
+    const lastSignIn = steps.reduce((acc, t, i) => (isSignIn(t) ? i : acc), -1);
     markers = denialMarkers(s);
     atDenial = idx > lastSignIn && (includesAny(msg, markers) || cands.some((c) => includesAny(c, markers)));
   } else {
@@ -98,8 +104,8 @@ export function judgeLeak(
   }
 
   const signInStep = cands.length
-    ? cands.every((c) => SIGN_IN_RE.test(c)) && !atDenial
-    : SIGN_IN_RE.test(msg ?? '') && !atDenial;
+    ? cands.every((c) => isSignIn(c)) && !atDenial
+    : isSignIn(msg ?? '') && !atDenial;
   if (signInStep) return inc('sign-in step failed');
 
   if (markers.length === 0) {

@@ -12,10 +12,11 @@ program
   .description('Security seatbelt for vibe-coded apps: OpenAI writes the authorization scenarios, Kane CLI proves the leak, the fix, and the proof.')
   .option('--no-report', 'do not wrap Kane runs with `kanehack report`')
   .option('--json', 'machine-readable output on stdout', false)
+  .option('--only <ids>', 'only these scenarios, e.g. S2 or S2,S4 (each runs with its owner control)')
   .showHelpAfterError();
 
 function ctx(): Ctx {
-  const g = program.opts<{ report: boolean; json: boolean }>();
+  const g = program.opts<{ report: boolean; json: boolean; only?: string }>();
   const root = findRoot();
   const cfg = loadConfig(root);
   return {
@@ -23,6 +24,7 @@ function ctx(): Ctx {
     cfg,
     report: g.report !== false && cfg.kanehack_report,
     json: !!g.json,
+    only: g.only ? g.only.split(',').map((x) => x.trim()).filter(Boolean) : undefined,
     log: (m: string) => {
       if (!g.json) console.error(m);
     },
