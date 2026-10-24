@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title><%= title %> · Northwind Goods</title>
+<title><%= title %> · Satrang Sarees</title>
 <style>
   :root {
     --bg: #f6f7f9; --card: #ffffff; --fg: #0f172a; --muted: #64748b; --line: #e2e8f0;
@@ -85,7 +85,7 @@
   footer { border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; }
   footer .in { max-width: 880px; margin: 0 auto; padding: 14px 20px; display: flex; justify-content: space-between; }
 
-  :root { --brand:#c2410c; --brand-soft:#ffedd5; --ink:#1c1917; --fg:#1c1917; --bg:#faf7f2; --line:#e7e0d5; --muted:#78716c; }
+  :root { --brand:#9d174d; --brand-soft:#fce7f3; --ink:#1c1917; --fg:#1c1917; --bg:#faf7f2; --line:#e7e0d5; --muted:#78716c; }
   .promo { background: var(--ink); color: #fde8d0; text-align: center; font-size: 12.5px; padding: 7px 12px; letter-spacing: .02em; }
   .topbar { background:#fff; border-bottom:1px solid var(--line); position: sticky; top:0; z-index:5; }
   .topbar .in { max-width: 1040px; }
@@ -105,11 +105,11 @@
   .subnav a:hover { color: var(--fg); text-decoration:none; }
   main { max-width: 1040px; }
   .hero { display:flex; align-items:center; justify-content:space-between; gap:20px; background: linear-gradient(120deg,#fdebd3,#fbd5b0); border-radius:16px; padding:22px 28px; margin-bottom:26px; overflow:hidden; }
-  .hero b { display:block; font-size:19px; letter-spacing:-.01em; color:#7c2d12; }
-  .hero span { color:#9a3412; font-size:14px; }
+  .hero b { display:block; font-size:19px; letter-spacing:-.01em; color:#500724; }
+  .hero span { color:#831843; font-size:14px; }
   .hero svg { flex:none; }
-  .hero .code { display:inline-block; margin-top:8px; border:1.5px dashed #c2410c; color:#9a3412; padding:2px 10px; border-radius:6px; font-weight:700; font-size:12px; letter-spacing:.08em; }
-  .btn.primary:hover { background:#9a3412; }
+  .hero .code { display:inline-block; margin-top:8px; border:1.5px dashed #9d174d; color:#831843; padding:2px 10px; border-radius:6px; font-weight:700; font-size:12px; letter-spacing:.08em; }
+  .btn.primary:hover { background:#831843; }
   th { background:#faf7f2; }
   tbody tr:hover td { background:#fffaf3; }
   .total { background:#faf7f2; }
@@ -132,10 +132,10 @@
 </head>
 <body>
 <% if (typeof nav === 'undefined' || nav !== false) { %>
-<div class="promo">Free shipping on orders over $50 &middot; Spring sale: take 15% off with code NORTH15</div>
+<div class="promo">Free shipping on orders over $50 &middot; Spring sale: take 15% off with code SATRANG15</div>
 <div class="topbar"><div class="in">
-  <a class="logo" href="/invoices"><span class="mark"><svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><rect width="34" height="34" rx="9" fill="#c2410c"/><path d="M9 25V9l16 16V9" fill="none" stroke="#fff" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"/></svg></span> Northwind Goods</a>
-  <div class="search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#78716c" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input type="text" placeholder="Search for products" aria-label="Search products" autocomplete="off"></div>
+  <a class="logo" href="/invoices"><span class="mark"><svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><rect width="34" height="34" rx="9" fill="#9d174d"/><path d="M23 11.5c-1.2-2-3.3-3-5.8-3-3 0-5 1.5-5 3.7 0 2.4 2.2 3.1 5.2 3.8 3 .7 5.3 1.5 5.3 4.1 0 2.4-2.2 4-5.4 4-2.8 0-5-1.1-6.3-3.2" fill="none" stroke="#fff" stroke-width="2.8" stroke-linecap="round"/></svg></span> Satrang Sarees</a>
+  <div class="search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#78716c" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input type="text" placeholder="Search for sarees" aria-label="Search products" autocomplete="off"></div>
   <div class="who">
     <% if (typeof userEmail !== 'undefined' && userEmail) { %><span><%= userEmail %></span><% } %>
     <a class="cart" href="/invoices" aria-label="Cart"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h2l2.4 11h10.2L20 7H6"/><circle cx="9" cy="19.5" r="1.4"/><circle cx="17" cy="19.5" r="1.4"/></svg><span class="dot">2</span></a>
