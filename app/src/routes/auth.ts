@@ -16,5 +16,8 @@ auth.post("/login", (req, res) => {
 });
 
 auth.post("/logout", (req, res) => {
-  req.session.destroy(() => res.redirect("/login"));
+  req.session.destroy(() => {
+    res.clearCookie("connect.sid");
+    res.redirect("/login");
+  });
 });
