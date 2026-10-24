@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title><%= title %> · Ledger</title>
+<title><%= title %> · Satrang Sarees</title>
 <style>
   :root {
     --bg: #f6f7f9; --card: #ffffff; --fg: #0f172a; --muted: #64748b; --line: #e2e8f0;
@@ -84,16 +84,118 @@
 
   footer { border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; }
   footer .in { max-width: 880px; margin: 0 auto; padding: 14px 20px; display: flex; justify-content: space-between; }
+
+  :root { --brand:#9d174d; --brand-soft:#fce7f3; --ink:#1c1917; --fg:#1c1917; --bg:#faf7f2; --line:#e7e0d5; --muted:#78716c; }
+  .promo { background: var(--ink); color: #fde8d0; text-align: center; font-size: 12.5px; padding: 7px 12px; letter-spacing: .02em; }
+  .topbar { background:#fff; border-bottom:1px solid var(--line); position: sticky; top:0; z-index:5; }
+  .topbar .in { max-width: 1040px; }
+  .logo .mark { background: transparent; width: 34px; height: 34px; }
+  .logo .mark svg { display:block; }
+  .logo { font-size: 19px; }
+  .search { flex:1; max-width: 420px; margin: 0 12px; position: relative; }
+  .search input { width:100%; padding: 9px 14px 9px 38px; border-radius: 999px; border:1px solid var(--line); background:#faf7f2; font: inherit; font-size: 14px; }
+  .search svg { position:absolute; left:13px; top:50%; transform:translateY(-50%); }
+  .cart { position:relative; display:grid; place-items:center; width:38px; height:38px; border-radius:50%; color: var(--fg); }
+  .cart:hover { background:#f5f0e8; }
+  .cart .dot { position:absolute; top:2px; right:0; background:var(--brand); color:#fff; font-size:10px; font-weight:700; min-width:16px; height:16px; border-radius:8px; display:grid; place-items:center; }
+  .subnav { background:#fff; border-bottom:1px solid var(--line); }
+  .subnav .in { max-width:1040px; margin:0 auto; padding:0 20px; display:flex; gap:22px; font-size:13.5px; overflow-x:auto; }
+  .subnav a { color: var(--muted); padding:10px 0; border-bottom:2px solid transparent; white-space:nowrap; }
+  .subnav a.on { color: var(--fg); border-color: var(--brand); font-weight:600; }
+  .subnav a:hover { color: var(--fg); text-decoration:none; }
+  main { max-width: 1040px; }
+  .hero { display:flex; align-items:center; justify-content:space-between; gap:20px; background: linear-gradient(120deg,#fdebd3,#fbd5b0); border-radius:16px; padding:22px 28px; margin-bottom:26px; overflow:hidden; }
+  .hero b { display:block; font-size:19px; letter-spacing:-.01em; color:#500724; }
+  .hero span { color:#831843; font-size:14px; }
+  .hero svg { flex:none; }
+  .hero .code { display:inline-block; margin-top:8px; border:1.5px dashed #9d174d; color:#831843; padding:2px 10px; border-radius:6px; font-weight:700; font-size:12px; letter-spacing:.08em; }
+  .btn.primary:hover { background:#831843; }
+  th { background:#faf7f2; }
+  tbody tr:hover td { background:#fffaf3; }
+  .total { background:#faf7f2; }
+  .cell { display:flex; align-items:center; gap:12px; }
+  .thumb { width:44px; height:44px; border-radius:10px; flex:none; display:block; }
+  .perks { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:26px; }
+  .perk { background:#fff; border:1px solid var(--line); border-radius:12px; padding:14px 16px; font-size:13px; color:var(--muted); }
+  .perk b { display:block; color:var(--fg); font-size:14px; margin-bottom:2px; }
+  .detail { display:grid; grid-template-columns: 220px 1fr; gap:26px; align-items:start; }
+  .detail .big { width:100%; height:auto; border-radius:14px; }
+  .auth { max-width: 420px; }
+  footer { background:#fff; margin-top:30px; }
+  footer .in { max-width:1040px; display:block; padding:26px 20px 18px; }
+  footer .cols { display:grid; grid-template-columns:2fr 1fr 1fr 1fr; gap:24px; margin-bottom:20px; }
+  footer h4 { margin:0 0 8px; color:var(--fg); font-size:13px; }
+  footer .cols a { display:block; color:var(--muted); padding:2px 0; }
+  footer .bottom { display:flex; justify-content:space-between; border-top:1px solid var(--line); padding-top:12px; }
+  @media (max-width:700px){ .search{display:none} .perks,.detail{grid-template-columns:1fr} footer .cols{grid-template-columns:1fr 1fr} .hero svg{display:none} th,td{padding:10px 8px} .topbar .who span{display:none} }
+
+  /* creatorgoose-inspired theme: warm off-white, near-black ink, lime + orange accents, pill buttons, tight bold type */
+  :root { --bg:#f4f2ee; --ink:#17160f; --fg:#17160f; --muted:#6b675c; --line:#e6e2d9; --brand:#17160f; --brand-ink:#fff;
+          --lime:#c9f53d; --orange:#ff7a3d; --pink:#c2185b; --radius:24px; --shadow:0 1px 0 rgba(23,22,15,.04), 0 18px 40px -22px rgba(23,22,15,.25); }
+  body { background:var(--bg); font-family:"Inter Tight","Instrument Sans",Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; letter-spacing:-.005em; }
+  h1 { font-size:44px; line-height:1.02; font-weight:800; letter-spacing:-.045em; }
+  .page-head { margin:10px 0 22px; }
+  .sub { font-size:15px; }
+  a { color:var(--fg); }
+  .promo { background:var(--lime); color:var(--ink); font-weight:600; letter-spacing:0; }
+  .topbar { background:rgba(244,242,238,.92); backdrop-filter:blur(8px); border-bottom:1px solid var(--line); }
+  .logo { font-weight:800; letter-spacing:-.04em; font-size:21px; }
+  .logo .mark svg rect { fill:var(--ink); }
+  .logo .mark svg path { stroke:var(--lime); }
+  .search input { background:#fff; border-color:var(--line); }
+  .cart:hover { background:#fff; }
+  .cart .dot { background:var(--orange); }
+  .subnav { background:transparent; border-bottom:1px solid var(--line); }
+  .subnav a { font-weight:500; }
+  .subnav a.on { border-color:var(--ink); color:var(--ink); }
+  .btn { border-radius:999px; padding:11px 20px; border:1px solid var(--line); background:#fff; font-weight:600; }
+  .btn:hover { background:#fff; border-color:var(--ink); }
+  .btn.primary { background:var(--ink); border-color:var(--ink); color:#fff; }
+  .btn.primary:hover { background:#000; }
+  .btn.ghost { background:transparent; }
+  .card { border-radius:var(--radius); border:1px solid var(--line); background:#fff; }
+  .hero { background:var(--ink); border-radius:28px; padding:28px 34px; }
+  .hero b { color:#fff; font-size:26px; font-weight:800; letter-spacing:-.04em; }
+  .hero span { color:#d9d6cc; font-size:15px; }
+  .hero .code { border:0; background:var(--lime); color:var(--ink); border-radius:999px; padding:4px 14px; }
+  .hero svg rect, .hero svg path { }
+  th { background:#fff; color:var(--muted); }
+  tbody tr:hover td { background:#faf9f6; }
+  td.num a { color:var(--ink); background:var(--lime); padding:3px 11px; border-radius:999px; font-weight:700; }
+  .total { background:#faf9f6; }
+  .total span.v { font-size:20px; font-weight:800; letter-spacing:-.03em; }
+  .pill { font-weight:700; padding:4px 12px; }
+  .pill.Paid { background:var(--lime); color:var(--ink); }
+  .pill.Unpaid { background:#ffe2d2; color:#a8390b; }
+  .perk { border-radius:20px; background:#fff; }
+  .banner { background:var(--lime); border-color:var(--lime); color:var(--ink); border-radius:16px; }
+  .error { border-radius:16px; }
+  input[type=text], input[type=email], input[type=password], input[type=date] { border-radius:14px; padding:12px 14px; }
+  input:focus { outline:2px solid var(--lime); border-color:var(--ink); }
+  .facts p.amount { font-size:40px; font-weight:800; letter-spacing:-.045em; }
+  .detail .big { border-radius:22px; }
+  .hint code { background:#fff; border:1px solid var(--line); }
+  footer { background:transparent; border-top:1px solid var(--line); }
+  footer h4 { font-weight:800; letter-spacing:-.02em; }
+  .search input { padding:11px 16px 11px 42px; }
+  .card { overflow:hidden; }
+  .hero svg [fill="#9d174d"], .hero svg [fill="#831843"] { fill:var(--lime); }
+  .hero svg [stroke="#9d174d"], .hero svg [stroke="#831843"] { stroke:var(--lime); }
+  .hero svg [fill="#fbcfe8"] { fill:var(--ink); }
 </style>
 </head>
 <body>
 <% if (typeof nav === 'undefined' || nav !== false) { %>
+<div class="promo">Free shipping on orders over $50 &middot; Spring sale: take 15% off with code SATRANG15</div>
 <div class="topbar"><div class="in">
-  <a class="logo" href="/invoices"><span class="mark">L</span> Ledger</a>
+  <a class="logo" href="/invoices"><span class="mark"><svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><rect width="34" height="34" rx="9" fill="#9d174d"/><path d="M23 11.5c-1.2-2-3.3-3-5.8-3-3 0-5 1.5-5 3.7 0 2.4 2.2 3.1 5.2 3.8 3 .7 5.3 1.5 5.3 4.1 0 2.4-2.2 4-5.4 4-2.8 0-5-1.1-6.3-3.2" fill="none" stroke="#fff" stroke-width="2.8" stroke-linecap="round"/></svg></span> Satrang Sarees</a>
+  <div class="search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#78716c" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input type="text" placeholder="Search for sarees" aria-label="Search products" autocomplete="off"></div>
   <div class="who">
     <% if (typeof userEmail !== 'undefined' && userEmail) { %><span><%= userEmail %></span><% } %>
+    <a class="cart" href="/invoices" aria-label="Cart"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h2l2.4 11h10.2L20 7H6"/><circle cx="9" cy="19.5" r="1.4"/><circle cx="17" cy="19.5" r="1.4"/></svg><span class="dot">2</span></a>
     <form method="post" action="/logout"><button class="btn ghost" type="submit">Sign out</button></form>
   </div>
 </div></div>
+<div class="subnav"><div class="in"><a href="/invoices" class="on">My account</a><a href="/invoices">Orders &amp; billing</a><a href="/invoices">Wishlist</a><a href="/invoices">Addresses</a><a href="/invoices">Help centre</a></div></div>
 <% } %>
 <main>
