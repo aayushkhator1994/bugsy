@@ -42,7 +42,7 @@ footer{padding:12px 0 40px;text-align:center;color:var(--muted);font-size:13px}f
 @media(max-width:600px){.word{font-size:24px}.vlabel{font-size:24px}.panel{padding:18px 16px}.k{display:block;min-width:0}main.wrap{padding:18px 14px 4px}header .wrap{padding:20px 14px}}
 </style></head><body>
 <header><div class="wrap"><div class="brand"><div class="mark">B</div><div><div class="word">Bugsy</div><p class="tag">Security seatbelt for vibe-coded apps</p></div></div>
-<div class="facts"><span>App <b>Ledger</b></span><span>Commits <code>bb5c31c</code> <code>bd410a3</code> <code>16216a9</code></span><span>Generated <b>2026-10-24T22:14:01.632Z</b></span></div></div></header>
+<div class="facts"><span>App <b>Ledger</b></span><span>Commits <code>bb5c31c</code> <code>bd410a3</code> <code>16216a9</code></span><span>Generated <b>2026-10-24T22:30:06.671Z</b></span></div></div></header>
 <main class="wrap">
 <section class="strip"><div class="vcard good"><div class="sid">S2</div><div class="vlabel">Denied as expected</div>
 <div class="vtitle">Another user&#39;s invoice is denied when opened directly</div><div class="vreason">denied, and the owner control passed</div><div class="ctl">owner control S1: <b>passed</b></div><div class="fixed">Patched and re-verified</div></div><div class="vcard good"><div class="sid">S3</div><div class="vlabel">Denied as expected</div>
@@ -63,10 +63,11 @@ footer{padding:12px 0 40px;text-align:center;color:var(--muted);font-size:13px}f
 <pre class="diff"><span class="">diff --git a/app/src/routes/invoices.ts b/app/src/routes/invoices.ts</span><span class="">--- a/app/src/routes/invoices.ts</span><span class="">+++ b/app/src/routes/invoices.ts</span><span class="hunk">@@ -39,8 +39,7 @@</span><span class=""> invoices.get(&quot;/invoices/:id&quot;, (req, res) =&gt; {</span><span class="del">-  // NOTE: no ownership check here (seeded for the demo)</span><span class="del">-  const row = db.prepare(&quot;SELECT * FROM invoices WHERE id = ?&quot;).get(req.params.id) as Invoice | undefined;</span><span class="add">+  const row = db.prepare(&quot;SELECT * FROM invoices WHERE id = ? AND owner_id = ?&quot;).get(req.params.id, req.session.userId) as Invoice | undefined;</span><span class="">   if (!row) return res.status(404).render(&quot;not-found&quot;);</span><span class="">   const banner = req.session.banner ?? null;</span><span class="">   delete req.session.banner;</span><span class="">   res.render(&quot;detail&quot;, { inv: view(row), banner });</span><span class=""> });</span><span class=""></span></pre>
 <h3>Rerun</h3><p class="meta">Kane execution <code>246f93ef-d7f5-407e-afa6-4ec540cc489c</code></p><table class="rr"><thead><tr><th>Scenario</th><th>Result</th></tr></thead><tbody><tr><td>S1</td><td><span class="pill good">pass</span></td></tr><tr><td>S2</td><td><span class="pill good">pass</span></td></tr><tr><td>S3</td><td><span class="pill good">pass</span></td></tr></tbody></table>
 <p class="ok">Re-verified on <code>16216a9</code> · Kane execution <code>ac202a1e-9bf8-4bc0-8aab-c8458a2f2a59</code></p></section>
-<section class="panel"><div class="ph"><h2>Does the test actually test?</h2><span class="pill bad">No</span></div>
+<section class="panel"><div class="ph"><h2>Does the test actually test?</h2><span class="pill good">Yes</span></div>
 <ol class="steps"><li><span class="n">1</span>Patch reverted</li><li><span class="n">2</span>S2 failed again</li><li><span class="n">3</span>Patch restored</li></ol>
-<p class="badtxt">The test did not detect the leak with the fix removed. Do not trust this test.</p>
-<div class="meta"><span>tests_detect_leak: <b>no</b></span><span>Kane execution <code>6173e8eb-e879-4feb-ac28-2654b42991f9</code></span></div></section>
+<p class="ok">The test fails when the fix is removed, so it really catches this leak.</p>
+<p class="muted">Recorded assertion failed; later RCA classified it as automation_bug/test_data_issue (raw evidence status: broken).</p>
+<div class="meta"><span>tests_detect_leak: <b>yes</b></span><span>Kane execution <code>6173e8eb-e879-4feb-ac28-2654b42991f9</code></span></div></section>
 
 
 
@@ -75,7 +76,8 @@ footer{padding:12px 0 40px;text-align:center;color:var(--muted);font-size:13px}f
 <div>green; committed 16216a9</div><div class="meta small"><span>commit <code>16216a9</code></span><span>Kane execution <code>246f93ef-d7f5-407e-afa6-4ec540cc489c</code></span></div></div></li><li><div class="dot good"></div><div class="tb"><div class="th"><b>verify</b><span class="muted small">2026-10-24T21:54:40.409Z</span></div>
 <div>fix re-verified on 16216a9</div><div class="meta small"><span>commit <code>16216a9</code></span><span>Kane execution <code>ac202a1e-9bf8-4bc0-8aab-c8458a2f2a59</code></span></div></div></li><li><div class="dot bad"></div><div class="tb"><div class="th"><b>self-check</b><span class="muted small">2026-10-24T22:04:32.213Z</span></div>
 <div>patch 16216a9 reverted; S2 failed; tests did NOT detect the leak</div><div class="meta small"><span>commit <code>bb5c31c</code></span><span>Kane execution <code>6173e8eb-e879-4feb-ac28-2654b42991f9</code></span></div></div></li><li><div class="dot good"></div><div class="tb"><div class="th"><b>scan</b><span class="muted small">2026-10-24T22:14:01.632Z</span></div>
-<div>S1 control_passed, S2 denied_as_expected, S3 denied_as_expected</div><div class="meta small"><span>commit <code>bb5c31c</code></span><span>Kane execution <code>5c6d42cf-98be-4d8e-ab22-f0ec47f85955</code></span></div></div></li></ol></section>
+<div>S1 control_passed, S2 denied_as_expected, S3 denied_as_expected</div><div class="meta small"><span>commit <code>bb5c31c</code></span><span>Kane execution <code>5c6d42cf-98be-4d8e-ab22-f0ec47f85955</code></span></div></div></li><li><div class="dot bad"></div><div class="tb"><div class="th"><b>self-check</b><span class="muted small">2026-10-24T22:30:06.671Z</span></div>
+<div>Offline re-evaluation of saved revert run: denial assertion failed, owner passed; later RCA classification retained separately. No new Kane execution.</div><div class="meta small"><span>commit <code>bb5c31c</code></span><span>Kane execution <code>6173e8eb-e879-4feb-ac28-2654b42991f9</code></span></div></div></li></ol></section>
 </main>
 <footer><div class="wrap"><p>Built with OpenAI, tested with Kane CLI. <b>#KaneCLIHackDay</b></p><p><a href="https://github.com/aayushkhator1994/bugsy">https://github.com/aayushkhator1994/bugsy</a></p></div></footer>
 </body></html>

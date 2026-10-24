@@ -196,5 +196,70 @@
   "starting_balance": 100951.4956,
   "credits_spent": 267.2392,
   "mentor_ticket": "https://kaneclihack.sh/help/H-0012",
-  "full_evidence_packs": "Local ignored .testmuai/evidence; sealed originals unchanged. Public exports omit HAR and console."
+  "full_evidence_packs": "Local ignored .testmuai/evidence; sealed originals unchanged. Public exports omit HAR and console.",
+  "re_evaluations": [
+    {
+      "execution_id": "6173e8eb-e879-4feb-ac28-2654b42991f9",
+      "executed_commit": "bb5c31ce43bbc59adbd62013de6b6c35bd9b7f5c",
+      "evaluator_commit": "ecbbde1c371f4d6aa205714e101d24b22533a190",
+      "evaluated_at": "2026-10-24T22:30:06.671Z",
+      "evaluation": "offline re-evaluation of saved run; no new Kane execution",
+      "sealed_pack_sha256": "e4f97ba0fcf3f8b5a90c05f0401bdb1578d9a0a3f4f203e103c20747343c5738",
+      "tests_detect_leak": true,
+      "outcomes": [
+        {
+          "scenario": "S1_owner_reads_own",
+          "kind": "control",
+          "status": "passed",
+          "verdict": "control_passed",
+          "reason": "passed"
+        },
+        {
+          "scenario": "S2_other_reads_by_url",
+          "kind": "leak_check",
+          "status": "failed",
+          "verdict": "leak_confirmed",
+          "reason": "failed at step 5 (denial); control passed",
+          "evidence_note": "Recorded assertion failed; later RCA classified it as automation_bug/test_data_issue (raw evidence status: broken).",
+          "failed_step": 5,
+          "failure_message": "assertion_failed: @ step 5",
+          "screenshot": "evidence/6173e8eb-e879-4feb-ac28-2654b42991f9/S2/22-screenshot.jpg"
+        }
+      ],
+      "raw_evidence": [
+        {
+          "name": "S1_owner_reads_own",
+          "status": "passed"
+        },
+        {
+          "name": "S2_other_reads_by_url",
+          "status": "broken",
+          "assertion_before_rca": {
+            "step_index": 5,
+            "rca_category": "automation_bug/test_data_issue"
+          }
+        }
+      ],
+      "stream": {
+        "done": true,
+        "overall_status": "failed",
+        "exit_code": 1,
+        "members": [
+          {
+            "path": "S1_owner_reads_own_test.md",
+            "status": "passed"
+          },
+          {
+            "path": "S2_other_reads_by_url_test.md",
+            "status": "failed",
+            "failure": {
+              "message": "assertion_failed: @ step 5",
+              "step_index": 5
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "rca_resolution": "Participant reports Kane team explained broken as later RCA classification. Correlated recorded assertion and owner-control evidence confirm the leak; raw sealed pack unchanged."
 }

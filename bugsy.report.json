@@ -1,7 +1,7 @@
 {
   "version": 1,
   "app": "Ledger",
-  "generated_at": "2026-10-24T22:14:01.632Z",
+  "generated_at": "2026-10-24T22:30:06.671Z",
   "findings": [
     {
       "scenario": "S2_other_reads_by_url",
@@ -36,8 +36,12 @@
       "self_check": {
         "execution_id": "6173e8eb-e879-4feb-ac28-2654b42991f9",
         "S2": "failed",
-        "tests_detect_leak": false,
-        "leak_only": false
+        "tests_detect_leak": true,
+        "leak_only": false,
+        "evidence_note": "Recorded assertion failed; later RCA classified it as automation_bug/test_data_issue (raw evidence status: broken).",
+        "re_evaluated": true,
+        "evaluator_commit": "ecbbde1c371f4d6aa205714e101d24b22533a190",
+        "evaluated_at": "2026-10-24T22:30:06.671Z"
       }
     },
     {
@@ -198,6 +202,34 @@
           "status": "passed",
           "verdict": "denied_as_expected",
           "reason": "denied, and the owner control passed"
+        }
+      ]
+    },
+    {
+      "at": "2026-10-24T22:30:06.671Z",
+      "phase": "self-check",
+      "commit": "bb5c31ce43bbc59adbd62013de6b6c35bd9b7f5c",
+      "execution_id": "6173e8eb-e879-4feb-ac28-2654b42991f9",
+      "exit_code": 1,
+      "summary": "Offline re-evaluation of saved revert run: denial assertion failed, owner passed; later RCA classification retained separately. No new Kane execution.",
+      "outcomes": [
+        {
+          "scenario": "S1_owner_reads_own",
+          "kind": "control",
+          "status": "passed",
+          "verdict": "control_passed",
+          "reason": "passed"
+        },
+        {
+          "scenario": "S2_other_reads_by_url",
+          "kind": "leak_check",
+          "status": "failed",
+          "verdict": "leak_confirmed",
+          "reason": "failed at step 5 (denial); control passed",
+          "evidence_note": "Recorded assertion failed; later RCA classified it as automation_bug/test_data_issue (raw evidence status: broken).",
+          "failed_step": 5,
+          "failure_message": "assertion_failed: @ step 5",
+          "screenshot": "evidence/6173e8eb-e879-4feb-ac28-2654b42991f9/S2/22-screenshot.jpg"
         }
       ]
     }
