@@ -7,7 +7,7 @@ export const DEFAULT_FIXTURES: FixtureInvoice[] = [
   { id: 1, owner: 'alice', client: 'Acme Co', amount: '$1,200.00', status: 'Unpaid' },
   { id: 2, owner: 'alice', client: 'Globex', amount: '$350.50', status: 'Paid' },
   { id: 3, owner: 'alice', client: 'Initech', amount: '$89.99', status: 'Unpaid' },
-  { id: 4, owner: 'bob', client: 'Umbrella', amount: '$4,000.00' },
+  { id: 4, owner: 'bob', client: 'Umbrella', amount: '$4,000.00', status: 'Unpaid' },
 ];
 
 /** Account labels and emails only. Never passwords. */
@@ -21,7 +21,7 @@ export function summarizeAccounts(config: BugsyConfig) {
 
 export const SCENARIO_SYSTEM = `You design authorization test scenarios for a web app, to be executed by a browser agent that follows human-readable steps.
 Rules:
-- Produce exactly these scenarios, in this order: S1_owner_reads_own (kind control), S2_other_reads_by_url (kind leak_check, control_id S1_owner_reads_own), S3_list_isolation (kind leak_check, control_id S1_owner_reads_own). Optionally add S4_other_marks_paid (kind leak_check, control_id S1_owner_reads_own).
+- Produce exactly these scenarios, in this order: S1_owner_reads_own (kind control), S2_other_reads_by_url (kind leak_check, control_id S1_owner_reads_own), S3_list_isolation (kind leak_check, control_id S1_owner_reads_own). Optionally add S4_signed_out_back_button and S5_other_marks_paid (each kind leak_check, control_id S1_owner_reads_own).
 - Every leak_check names its control in control_id. The control scenario has control_id null.
 - "requirement" is a general rule in one sentence. Never mention a specific invoice number in the requirement sentence.
 - "steps" are browser actions a person could follow, such as: Sign in as Bob, Open /invoices/4 and confirm it shows Client: Umbrella, Sign out, Sign in as Alice, Open /invoices/4. Ids and URLs are fine in steps. No SQL, no HTTP or status-code talk, no cookies, no headers.
@@ -29,6 +29,7 @@ Rules:
 - S1: the owner signs in and opens their own invoice and sees its client (for example Alice opens /invoices/3 and sees Client: Initech).
 - S2: Bob opens his invoice (/invoices/4) and confirms Client: Umbrella, signs out, Alice signs in and opens the same URL, and must see 'Invoice not found' with no Umbrella and no $4,000.00.
 - S3: Alice's invoice list must not contain Bob's invoices (no Umbrella, no $4,000.00, no link to invoice 4).
+- S5 (optional): Alice, signed in, sends the mark-as-paid request for Bob's invoice 4 directly (POST /invoices/4/pay) from her browser session without opening that page; she signs out, Bob signs in and opens /invoices/4, which must still show 'Status: Unpaid'. This one step may name the request; the other steps follow the rules above.
 - Passwords are never provided to you and never appear in steps; steps say "Sign in as <name>".`;
 
 export function buildScenarioInput(config: BugsyConfig, fixtures: FixtureInvoice[] = DEFAULT_FIXTURES): string {

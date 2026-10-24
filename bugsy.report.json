@@ -354,6 +354,23 @@
         "The page shows 'Sign in'",
         "The text 'Client: Initech' is not visible"
       ]
+    },
+    {
+      "id": "S5_other_marks_paid",
+      "kind": "leak_check",
+      "control_id": "S1_owner_reads_own",
+      "title": "Another user cannot mark my invoice as paid by sending the request directly",
+      "requirement": "A signed-in user must not be able to change an invoice owned by another user, even by sending the change request directly instead of using the invoice page; the owner's invoice keeps its status.",
+      "steps": [
+        "Sign in as Alice.",
+        "While signed in as Alice, send the mark-as-paid request for invoice 4 directly (POST /invoices/4/pay) from Alice's browser session, without opening invoice 4's page.",
+        "Sign out.",
+        "Sign in as Bob.",
+        "Open /invoices/4 and confirm the page shows Status: Unpaid."
+      ],
+      "expected": [
+        "The page shows 'Status: Unpaid'"
+      ]
     }
   ],
   "scan": {
