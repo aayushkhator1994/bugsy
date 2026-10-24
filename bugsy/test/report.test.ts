@@ -20,7 +20,8 @@ test('report round-trips, keeps history, renders self-contained HTML', () => {
   const html = renderHtml(back, root);
   assert.ok(!/<link|<script src|https?:\/\/cdn/i.test(html));
   assert.match(html, /leak &lt;confirmed&gt;/);
-  assert.match(html, /tests detect the leak/);
+  assert.match(html, /Does the test actually test\?/);
+  assert.match(html, /tests_detect_leak: <b>yes<\/b>/);
   assert.match(html, /green-2/);
   assert.match(html, /class="add">\+new/);
 });
