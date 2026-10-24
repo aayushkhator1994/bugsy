@@ -35,6 +35,8 @@ function fixture(opts: {
   errors?: string[];
   invalidPlan?: boolean;
   rca?: string;
+  /** recorded id of the failing assertion, "<0-based test step>-<action>" (default 4-5) */
+  rcaStep?: string;
 } = {}) {
   const root = mkdtempSync(join(tmpdir(), 'bugsy-judge-'));
   const cfg = parseConfig({
@@ -49,7 +51,7 @@ function fixture(opts: {
     path: `tests/authz/${s.id}_test.md`,
     test_id: s.id,
     status: memberStatuses[s.id] as KaneMember['status'],
-    ...(memberStatuses[s.id] === 'failed' ? { failure: opts.rca ? { step_index: 5, message: 'assertion_failed: @ step 5' } : denialFailure } : {}),
+    ...(memberStatuses[s.id] === 'failed' ? { failure: opts.rca ? { step_index: opts.rcaStep ? Number(opts.rcaStep.split('-')[0]) + 1 : 5, message: 'assertion_failed: @ step 5' } : denialFailure } : {}),
   }));
   const packPath = join(root, 'run.evidence');
   const zip = new AdmZip();
@@ -75,18 +77,18 @@ function fixture(opts: {
         definition: { sha256: 'sha256:' + (opts.rca === 'definition-mismatch' ? 'wrong' : createHash('sha256').update(md).digest('hex')) },
         steps: [
           { id: '3-6', ordinal: 21, status: opts.rca === 'prior-broken' ? 'broken' : 'passed', kind: 'click' },
-          { id: '4-5', ordinal: 22, status: 'failed', kind: opts.rca === 'wrong-kind' ? 'navigate' : 'assert' },
+          { id: opts.rcaStep ?? '4-5', ordinal: 22, status: 'failed', kind: opts.rca === 'wrong-kind' ? 'navigate' : 'assert' },
         ],
       })));
-      zip.addFile(`tests/${s.id}/steps/22-4-5/failure.yaml`, Buffer.from(yaml({
-        step: '4-5', status: 'broken',
+      zip.addFile(`tests/${s.id}/steps/22-${opts.rcaStep ?? '4-5'}/failure.yaml`, Buffer.from(yaml({
+        step: opts.rcaStep ?? '4-5', status: 'broken',
         error: { type: 'replay_failure', message: opts.rca === 'timeout' ? 'timeout' : opts.rca === 'wrong-step' ? 'assertion_failed: @ step 4' : 'assertion_failed: @ step 5' },
         ...(opts.rca === 'no-triage' ? {} : { triage: {
           status: 'triaged', by: { kind: 'agent' },
           rca: { category: opts.rca === 'other-category' ? 'infra/network' : 'automation_bug/test_data_issue', root_cause: 'Invoice unexpectedly present' },
         } }),
       })));
-      if (opts.rca !== 'no-screenshot') zip.addFile(`tests/${s.id}/steps/22-4-5/screenshot.jpg`, Buffer.from('ffd8ffe0', 'hex'));
+      if (opts.rca !== 'no-screenshot') zip.addFile(`tests/${s.id}/steps/22-${opts.rcaStep ?? '4-5'}/screenshot.jpg`, Buffer.from('ffd8ffe0', 'hex'));
     }
   }
   if (opts.corrupt) writeFileSync(packPath, 'not a zip');
@@ -204,6 +206,17 @@ test('recorded denial assertion confirms leak despite later RCA automation-bug c
   assert.equal(createHash('sha256').update(readFileSync(f.run.pack_path!)).digest('hex'), packHash);
   assert.equal(selfCheckPassed(outcomes, S2), true);
   assert.equal(patchMayCommit(outcomes), false);
+});
+
+test('the "@ step N" in an RCA-classified failure is the action within the test step, not the test step', () => {
+  // S5 revert run: recorded id 5-5 (sixth test step, action 5), stream step_index 6, message "@ step 5"
+  const f = fixture({ overall: 'failed', exit: 1, memberStatuses: { [S2]: 'failed' }, packStatuses: { [S2]: 'broken' }, rca: 'valid', rcaStep: '5-5' });
+  const { exported } = judgeRun(f.ctx, f.run, scenarios);
+  assert.deepEqual(exported!.tests.find((t) => t.name === S2)!.assertion_before_rca, { step_index: 6, rca_category: 'automation_bug/test_data_issue' });
+  // the stream's test step must match the recorded one
+  const off = fixture({ overall: 'failed', exit: 1, memberStatuses: { [S2]: 'failed' }, packStatuses: { [S2]: 'broken' }, rca: 'valid', rcaStep: '5-5' });
+  off.run.members.find((m) => m.test_id === S2)!.failure!.step_index = 5;
+  assert.equal(judgeRun(off.ctx, off.run, scenarios).exported!.tests.find((t) => t.name === S2)!.assertion_before_rca, undefined);
 });
 
 test('RCA does not excuse timeouts, other broken steps, uncorrelated failures or missing proof', () => {
