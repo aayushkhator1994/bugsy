@@ -1,6 +1,6 @@
 # Ledger — Product Requirements
 
-Ledger is a small invoicing web app for freelancers. A user signs in, sees their invoices, opens one, marks it as paid, and creates new ones. It runs at `http://localhost:3000`.
+Ledger is a small invoicing web app for freelancers. A user signs in, sees their invoices, opens one, marks it as paid, and creates new ones. It runs at `http://localhost:3100`.
 
 This document is the source of truth for what Ledger must do. Tests are designed from it.
 

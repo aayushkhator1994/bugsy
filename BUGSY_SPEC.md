@@ -207,7 +207,7 @@ A failing sign-in, a timeout, or a broken app is never "secure". The control is 
 
 `bugsy.config.json`
 ```json
-{"app":{"start":"npx tsx app/src/server.ts","url":"http://localhost:3000","health":"/health","source_globs":["app/src/routes/**"]},
+{"app":{"start":"npx tsx app/src/server.ts","url":"http://localhost:3100","health":"/health","source_globs":["app/src/routes/**"]},
  "accounts":{"alice":{"email":"alice@ledger.test","password":"alice123"},"bob":{"email":"bob@ledger.test","password":"bob123"}},
  "ownership_rule":"Each invoice belongs to exactly one user. Alice owns invoices 1-3, Bob owns 4-6. A signed-in user may view and change only their own invoices; any other invoice must show 'Invoice not found'.",
  "routes":["GET /login","POST /login","GET /invoices","GET /invoices/:id","POST /invoices/:id/pay","GET /invoices/new","POST /invoices"]}
