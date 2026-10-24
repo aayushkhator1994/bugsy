@@ -104,3 +104,11 @@ test('without step texts only the primary denial text anchors the failure', () =
   assert.equal(judgeLeak(S2, m('S2', 'failed', leakFail), m('S1', 'passed'), c).verdict, 'leak_confirmed');
   assert.equal(judgeLeak(S2, m('S2', 'failed', { message: "expected 'Client: Umbrella'", step_index: 1 }), m('S1', 'passed'), c).verdict, 'inconclusive');
 });
+
+
+test('bare expected literals from OpenAI anchor the denial without accepting unrelated failures', () => {
+  const scenario = { ...S2, expected: ['Invoice not found'] };
+  assert.deepEqual(denialMarkers(scenario), ['Invoice not found']);
+  assert.equal(judgeLeak(scenario, m('S2', 'failed', leakFail), m('S1', 'passed'), { packPresent: true, anyBroken: false }).verdict, 'leak_confirmed');
+  assert.equal(judgeLeak(scenario, m('S2', 'failed', { message: 'Navigation failed: connection reset', step_index: 2 }), m('S1', 'passed'), { packPresent: true, anyBroken: false }).verdict, 'inconclusive');
+});

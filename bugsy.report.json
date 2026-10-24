@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "app": "Ledger",
+  "generated_at": "2026-10-24T21:15:46.784Z",
+  "findings": [],
+  "history": [],
+  "scenarios": [
+    {
+      "id": "S1_owner_reads_own",
+      "kind": "control",
+      "title": "Owner can read their own invoice",
+      "requirement": "A signed-in user may view invoices they own.",
+      "steps": [
+        "Sign in as Alice.",
+        "Open /invoices/3.",
+        "Confirm the page shows Client: Initech."
+      ],
+      "expected": [
+        "Client: Initech"
+      ]
+    },
+    {
+      "id": "S2_other_reads_by_url",
+      "kind": "leak_check",
+      "title": "Another user's invoice is denied when opened directly",
+      "requirement": "Opening an invoice owned by another user must show a not-found message without revealing its client or amount.",
+      "steps": [
+        "Sign in as Bob.",
+        "Open /invoices/4 and confirm the page shows Client: Umbrella and $4,000.00.",
+        "Sign out.",
+        "Sign in as Alice.",
+        "Open /invoices/4.",
+        "Confirm the page shows Invoice not found.",
+        "Confirm Umbrella and $4,000.00 are not on the page."
+      ],
+      "expected": [
+        "Invoice not found"
+      ],
+      "control_id": "S1_owner_reads_own"
+    },
+    {
+      "id": "S3_list_isolation",
+      "kind": "leak_check",
+      "title": "Invoice list excludes another user's invoices",
+      "requirement": "A signed-in user's invoice list must contain only their own invoices and must not expose another user's clients, amounts, or invoice links.",
+      "steps": [
+        "Sign in as Alice.",
+        "Open /invoices.",
+        "Confirm the list contains Initech.",
+        "Inspect the complete invoice list, following any pagination or loading additional entries if available.",
+        "Confirm the list does not contain Umbrella or $4,000.00.",
+        "Confirm the list has no links to /invoices/4, /invoices/5, or /invoices/6."
+      ],
+      "expected": [
+        "Initech"
+      ],
+      "control_id": "S1_owner_reads_own"
+    }
+  ]
+}

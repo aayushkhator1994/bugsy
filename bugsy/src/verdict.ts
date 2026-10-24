@@ -24,11 +24,15 @@ export interface VerdictInput {
 
 const SIGN_IN_RE = /\b(sign|log)\s*-?\s*in\b|\bcredentials?\b|\bpassword\b/i;
 
-/** Quoted strings in the scenario's expected lines: the texts the denial assertion looks for. */
+/** Expected literal text, optionally quoted in a sentence, that anchors the denial assertion. */
 export function denialMarkers(s: Scenario): string[] {
   const out = new Set<string>();
   const re = /["'‘’“”]([^"'‘’“”]{2,})["'‘’“”]/g;
-  for (const line of s.expected) for (const m of line.matchAll(re)) out.add(m[1]!.trim());
+  for (const line of s.expected) {
+    const quoted = [...line.matchAll(re)];
+    if (quoted.length) for (const m of quoted) out.add(m[1]!.trim());
+    else if (line.trim()) out.add(line.trim());
+  }
   return [...out];
 }
 
