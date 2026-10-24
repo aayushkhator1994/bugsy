@@ -1,0 +1,34 @@
+step: 3-3
+status: broken
+error:
+  message: 'Final verification failed: "the page shows ''Sign in'' and the text ''Client:
+    Initech'' is not visible"'
+page_state:
+  url: http://localhost:3197/invoices/3
+  screenshot: steps/14-3-3/screenshot.jpg
+console_at_failure:
+  ref: logs/3-console.ndjson
+  step: 3-3
+network_at_failure:
+  ref: logs/3-network.har
+  step: 3-3
+title: Final assertion ran on invoice page
+triage:
+  status: triaged
+  by:
+    kind: agent
+    id: v16-investigation/terminal
+    at: '2026-10-24T22:59:00.529874+00:00'
+  rca:
+    root_cause: 'The automation did not keep the browser on the page reached by Back
+      navigation. It waited on the login page at step 3-1, then checked and asserted
+      while the browser was back at invoice #3, where the Initech client text is present.'
+    category: automation_bug/agent_misstep
+    confidence: 0.98
+  verification:
+    status: not_verified
+  severity: minor
+  suggested_fix:
+    summary: Update the automation to perform exactly one browser Back action, wait
+      until the login page is stable, and verify the page immediately without any
+      further navigation.
