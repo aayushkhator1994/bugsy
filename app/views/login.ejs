@@ -1,9 +1,16 @@
-<%- include('_head', {title: 'Sign in'}) %>
-<h1>Sign in</h1>
-<% if (error) { %><p class="error"><%= error %></p><% } %>
-<form method="post" action="/login">
-  <label>Email <input type="email" name="email" required></label>
-  <label>Password <input type="password" name="password" required></label>
-  <button type="submit">Sign in</button>
-</form>
+<%- include('_head', {title: 'Sign in', nav: false}) %>
+<div class="auth">
+  <div class="logo"><span class="mark">L</span> Ledger</div>
+  <div class="card"><div class="pad">
+    <h1>Sign in</h1>
+    <p class="sub">Invoices for freelancers.</p>
+    <% if (error) { %><p class="error"><%= error %></p><% } %>
+    <form method="post" action="/login" class="stack">
+      <label>Email <input type="email" name="email" placeholder="you@example.com" autocomplete="username" required></label>
+      <label>Password <input type="password" name="password" placeholder="••••••••" autocomplete="current-password" required></label>
+      <div class="actions"><button class="btn primary" type="submit">Sign in</button></div>
+    </form>
+  </div></div>
+  <p class="hint">Demo accounts: <code>alice@ledger.test</code> and <code>bob@ledger.test</code></p>
+</div>
 <%- include('_foot') %>

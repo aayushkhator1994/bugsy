@@ -1,4 +1,7 @@
 <%- include('_head', {title: 'Not found'}) %>
-<h1>Invoice not found</h1>
-<p><a href="/invoices">Back to invoices</a></p>
+<div class="card"><div class="pad empty">
+  <h1>Invoice not found</h1>
+  <p class="sub">There is no invoice with that number in your account.</p>
+  <p style="margin-top:18px"><a class="btn" href="/invoices">Back to invoices</a></p>
+</div></div>
 <%- include('_foot') %>

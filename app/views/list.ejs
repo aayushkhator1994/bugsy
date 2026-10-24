@@ -1,14 +1,25 @@
 <%- include('_head', {title: 'Your invoices'}) %>
-<h1>Your invoices</h1>
-<table>
-  <thead><tr><th>Invoice #</th><th>Client</th><th>Amount</th><th>Status</th></tr></thead>
-  <tbody>
-  <% rows.forEach(function(r) { %>
-    <tr><td><a href="/invoices/<%= r.id %>"><%= r.id %></a></td><td><%= r.client %></td><td><%= r.amount %></td><td><%= r.status %></td></tr>
-  <% }) %>
-  </tbody>
-</table>
-<p>Total outstanding: <%= outstanding %></p>
-<p><a href="/invoices/new">New invoice</a></p>
-<form method="post" action="/logout"><button type="submit">Sign out</button></form>
+<div class="page-head">
+  <div>
+    <h1>Your invoices</h1>
+    <p class="sub"><%= rows.length %> invoice<%= rows.length === 1 ? '' : 's' %></p>
+  </div>
+  <a class="btn primary" href="/invoices/new">New invoice</a>
+</div>
+<div class="card">
+  <table>
+    <thead><tr><th>Invoice #</th><th>Client</th><th>Amount</th><th>Status</th></tr></thead>
+    <tbody>
+    <% rows.forEach(function(r) { %>
+      <tr>
+        <td class="num"><a href="/invoices/<%= r.id %>">#<%= r.id %></a></td>
+        <td><%= r.client %></td>
+        <td class="amt"><%= r.amount %></td>
+        <td><span class="pill <%= r.status %>"><%= r.status %></span></td>
+      </tr>
+    <% }) %>
+    </tbody>
+  </table>
+  <div class="total"><span class="v">Total outstanding: <%= outstanding %></span><span class="sub">unpaid invoices</span></div>
+</div>
 <%- include('_foot') %>

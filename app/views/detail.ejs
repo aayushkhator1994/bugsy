@@ -1,11 +1,24 @@
 <%- include('_head', {title: 'Invoice #' + inv.id}) %>
+<p style="margin:0 0 14px"><a href="/invoices">Back to invoices</a></p>
 <% if (banner) { %><div class="banner"><%= banner %></div><% } %>
-<h1>Invoice #<%= inv.id %></h1>
-<p>Client: <%= inv.client %></p>
-<p>Amount: <%= inv.amount %></p>
-<p>Status: <%= inv.status %></p>
-<% if (inv.status === 'Unpaid') { %>
-<form method="post" action="/invoices/<%= inv.id %>/pay"><button type="submit">Mark as paid</button></form>
-<% } %>
-<p><a href="/invoices">Back to invoices</a></p>
+<div class="page-head">
+  <div>
+    <h1>Invoice #<%= inv.id %></h1>
+    <p class="sub">Issued to <%= inv.client %></p>
+  </div>
+  <span class="pill <%= inv.status %>"><%= inv.status %></span>
+</div>
+<div class="card"><div class="pad">
+  <%# Each line is one contiguous text node ("Client: Initech") so browser tests can assert the phrase. %>
+  <div class="facts">
+    <p>Client: <%= inv.client %></p>
+    <p class="amount">Amount: <%= inv.amount %></p>
+    <p>Status: <%= inv.status %></p>
+  </div>
+  <% if (inv.status === 'Unpaid') { %>
+  <form method="post" action="/invoices/<%= inv.id %>/pay" class="actions" style="margin-top:20px">
+    <button class="btn primary" type="submit">Mark as paid</button>
+  </form>
+  <% } %>
+</div></div>
 <%- include('_foot') %>

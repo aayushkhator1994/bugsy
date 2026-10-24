@@ -1,11 +1,13 @@
 <%- include('_head', {title: 'New invoice'}) %>
-<h1>New invoice</h1>
-<% if (error) { %><p class="error"><%= error %></p><% } %>
-<form method="post" action="/invoices">
-  <label>Client <input type="text" name="client" value="<%= values.client %>"></label>
-  <label>Amount <input type="text" name="amount" value="<%= values.amount %>"></label>
-  <label>Due date <input type="date" name="due_date" value="<%= values.due_date %>"></label>
-  <button type="submit">Create invoice</button>
-</form>
-<p><a href="/invoices">Back to invoices</a></p>
+<p style="margin:0 0 14px"><a href="/invoices">Back to invoices</a></p>
+<div class="page-head"><div><h1>New invoice</h1><p class="sub">It will be created as Unpaid.</p></div></div>
+<div class="card"><div class="pad">
+  <% if (error) { %><p class="error"><%= error %></p><% } %>
+  <form method="post" action="/invoices" class="stack">
+    <label>Client <input type="text" name="client" value="<%= values.client %>" placeholder="Acme Co"></label>
+    <label>Amount <input type="text" name="amount" value="<%= values.amount %>" placeholder="1200.00" inputmode="decimal"></label>
+    <label>Due date <input type="date" name="due_date" value="<%= values.due_date %>"></label>
+    <div class="actions"><button class="btn primary" type="submit">Create invoice</button></div>
+  </form>
+</div></div>
 <%- include('_foot') %>
