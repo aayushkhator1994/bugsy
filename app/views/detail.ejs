@@ -1,0 +1,11 @@
+<%- include('_head', {title: 'Invoice #' + inv.id}) %>
+<% if (banner) { %><div class="banner"><%= banner %></div><% } %>
+<h1>Invoice #<%= inv.id %></h1>
+<p>Client: <%= inv.client %></p>
+<p>Amount: <%= inv.amount %></p>
+<p>Status: <%= inv.status %></p>
+<% if (inv.status === 'Unpaid') { %>
+<form method="post" action="/invoices/<%= inv.id %>/pay"><button type="submit">Mark as paid</button></form>
+<% } %>
+<p><a href="/invoices">Back to invoices</a></p>
+<%- include('_foot') %>

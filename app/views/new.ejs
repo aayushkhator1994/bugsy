@@ -1,0 +1,11 @@
+<%- include('_head', {title: 'New invoice'}) %>
+<h1>New invoice</h1>
+<% if (error) { %><p class="error"><%= error %></p><% } %>
+<form method="post" action="/invoices">
+  <label>Client <input type="text" name="client" value="<%= values.client %>"></label>
+  <label>Amount <input type="text" name="amount" value="<%= values.amount %>"></label>
+  <label>Due date <input type="date" name="due_date" value="<%= values.due_date %>"></label>
+  <button type="submit">Create invoice</button>
+</form>
+<p><a href="/invoices">Back to invoices</a></p>
+<%- include('_foot') %>

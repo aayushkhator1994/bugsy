@@ -1,0 +1,14 @@
+<%- include('_head', {title: 'Your invoices'}) %>
+<h1>Your invoices</h1>
+<table>
+  <thead><tr><th>Invoice #</th><th>Client</th><th>Amount</th><th>Status</th></tr></thead>
+  <tbody>
+  <% rows.forEach(function(r) { %>
+    <tr><td><a href="/invoices/<%= r.id %>"><%= r.id %></a></td><td><%= r.client %></td><td><%= r.amount %></td><td><%= r.status %></td></tr>
+  <% }) %>
+  </tbody>
+</table>
+<p>Total outstanding: <%= outstanding %></p>
+<p><a href="/invoices/new">New invoice</a></p>
+<form method="post" action="/logout"><button type="submit">Sign out</button></form>
+<%- include('_foot') %>
