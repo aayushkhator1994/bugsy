@@ -128,6 +128,60 @@
   footer .cols a { display:block; color:var(--muted); padding:2px 0; }
   footer .bottom { display:flex; justify-content:space-between; border-top:1px solid var(--line); padding-top:12px; }
   @media (max-width:700px){ .search{display:none} .perks,.detail{grid-template-columns:1fr} footer .cols{grid-template-columns:1fr 1fr} .hero svg{display:none} th,td{padding:10px 8px} .topbar .who span{display:none} }
+
+  /* creatorgoose-inspired theme: warm off-white, near-black ink, lime + orange accents, pill buttons, tight bold type */
+  :root { --bg:#f4f2ee; --ink:#17160f; --fg:#17160f; --muted:#6b675c; --line:#e6e2d9; --brand:#17160f; --brand-ink:#fff;
+          --lime:#c9f53d; --orange:#ff7a3d; --pink:#c2185b; --radius:24px; --shadow:0 1px 0 rgba(23,22,15,.04), 0 18px 40px -22px rgba(23,22,15,.25); }
+  body { background:var(--bg); font-family:"Inter Tight","Instrument Sans",Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; letter-spacing:-.005em; }
+  h1 { font-size:44px; line-height:1.02; font-weight:800; letter-spacing:-.045em; }
+  .page-head { margin:10px 0 22px; }
+  .sub { font-size:15px; }
+  a { color:var(--fg); }
+  .promo { background:var(--lime); color:var(--ink); font-weight:600; letter-spacing:0; }
+  .topbar { background:rgba(244,242,238,.92); backdrop-filter:blur(8px); border-bottom:1px solid var(--line); }
+  .logo { font-weight:800; letter-spacing:-.04em; font-size:21px; }
+  .logo .mark svg rect { fill:var(--ink); }
+  .logo .mark svg path { stroke:var(--lime); }
+  .search input { background:#fff; border-color:var(--line); }
+  .cart:hover { background:#fff; }
+  .cart .dot { background:var(--orange); }
+  .subnav { background:transparent; border-bottom:1px solid var(--line); }
+  .subnav a { font-weight:500; }
+  .subnav a.on { border-color:var(--ink); color:var(--ink); }
+  .btn { border-radius:999px; padding:11px 20px; border:1px solid var(--line); background:#fff; font-weight:600; }
+  .btn:hover { background:#fff; border-color:var(--ink); }
+  .btn.primary { background:var(--ink); border-color:var(--ink); color:#fff; }
+  .btn.primary:hover { background:#000; }
+  .btn.ghost { background:transparent; }
+  .card { border-radius:var(--radius); border:1px solid var(--line); background:#fff; }
+  .hero { background:var(--ink); border-radius:28px; padding:28px 34px; }
+  .hero b { color:#fff; font-size:26px; font-weight:800; letter-spacing:-.04em; }
+  .hero span { color:#d9d6cc; font-size:15px; }
+  .hero .code { border:0; background:var(--lime); color:var(--ink); border-radius:999px; padding:4px 14px; }
+  .hero svg rect, .hero svg path { }
+  th { background:#fff; color:var(--muted); }
+  tbody tr:hover td { background:#faf9f6; }
+  td.num a { color:var(--ink); background:var(--lime); padding:3px 11px; border-radius:999px; font-weight:700; }
+  .total { background:#faf9f6; }
+  .total span.v { font-size:20px; font-weight:800; letter-spacing:-.03em; }
+  .pill { font-weight:700; padding:4px 12px; }
+  .pill.Paid { background:var(--lime); color:var(--ink); }
+  .pill.Unpaid { background:#ffe2d2; color:#a8390b; }
+  .perk { border-radius:20px; background:#fff; }
+  .banner { background:var(--lime); border-color:var(--lime); color:var(--ink); border-radius:16px; }
+  .error { border-radius:16px; }
+  input[type=text], input[type=email], input[type=password], input[type=date] { border-radius:14px; padding:12px 14px; }
+  input:focus { outline:2px solid var(--lime); border-color:var(--ink); }
+  .facts p.amount { font-size:40px; font-weight:800; letter-spacing:-.045em; }
+  .detail .big { border-radius:22px; }
+  .hint code { background:#fff; border:1px solid var(--line); }
+  footer { background:transparent; border-top:1px solid var(--line); }
+  footer h4 { font-weight:800; letter-spacing:-.02em; }
+  .search input { padding:11px 16px 11px 42px; }
+  .card { overflow:hidden; }
+  .hero svg [fill="#9d174d"], .hero svg [fill="#831843"] { fill:var(--lime); }
+  .hero svg [stroke="#9d174d"], .hero svg [stroke="#831843"] { stroke:var(--lime); }
+  .hero svg [fill="#fbcfe8"] { fill:var(--ink); }
 </style>
 </head>
 <body>
