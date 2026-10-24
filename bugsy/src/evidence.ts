@@ -8,7 +8,7 @@ import { parse as parseYaml } from 'yaml';
 import type { EvidenceTest, KaneMember } from './types.ts';
 
 const TEST_RE = /^tests\/([^/]+)\/(.+)$/;
-const STEP_RE = /^steps\/(\d+)(?:-[^/]*)?\/(screenshot\.png|failure\.yaml)$/;
+const STEP_RE = /^steps\/(\d+)(?:-[^/]*)?\/(screenshot\.(?:png|jpe?g)|failure\.yaml)$/;
 
 /** Allow-list: the only entry names that may leave the pack. */
 export function isExportable(entry: string): boolean {
@@ -44,7 +44,7 @@ interface PackTest {
   result?: any;
   resultText?: string;
   testMd?: string;
-  steps: Map<number, { screenshot?: Buffer; failureText?: string; failure?: any }>;
+  steps: Map<number, { screenshot?: Buffer; screenshotExt?: string; failureText?: string; failure?: any }>;
 }
 
 function readPack(zip: AdmZip): { runYaml?: string; failureYaml?: string; tests: Map<string, PackTest> } {
@@ -72,7 +72,10 @@ function readPack(zip: AdmZip): { runYaml?: string; failureYaml?: string; tests:
       if (!s) continue;
       const n = Number(s[1]);
       const step = t.steps.get(n) ?? {};
-      if (s[2] === 'screenshot.png') step.screenshot = e.getData();
+      if (s[2]!.startsWith('screenshot.')) {
+        step.screenshot = e.getData();
+        step.screenshotExt = s[2]!.slice('screenshot.'.length);
+      }
       else {
         step.failureText = e.getData().toString('utf8');
         step.failure = safeYaml(step.failureText);
@@ -161,7 +164,7 @@ export function exportEvidence(opts: {
     for (const [n, s] of [...t.steps].sort((a, b) => a[0] - b[0])) {
       if (s.failureText) writeFileSync(join(tdir, `${n}-failure.yaml`), redactText(s.failureText, secrets));
       if (s.screenshot) {
-        const p = join(tdir, `${n}-screenshot.png`);
+        const p = join(tdir, `${n}-screenshot.${s.screenshotExt ?? 'png'}`);
         writeFileSync(p, s.screenshot);
         if (fstep === undefined || n === fstep) screenshot = relative(opts.root, p);
       }

@@ -7,9 +7,9 @@ import { join } from 'node:path';
 import { exportEvidence, isExportable, parseTestSteps, scenarioLabel } from '../src/evidence.ts';
 
 // Synthetic pack following the documented layout (evidence.md / debug.md). Field names inside the YAML are guesses.
-function syntheticPack(dir: string): string {
+function syntheticPack(dir: string, ext = 'png'): string {
   const z = new AdmZip();
-  const png = Buffer.from('89504e470d0a1a0a', 'hex');
+  const png = Buffer.from(ext === 'png' ? '89504e470d0a1a0a' : 'ffd8ffe0', 'hex');
   z.addFile('run.yaml', Buffer.from('title: bugsy:scan:abc1234\nstatus: failed\n'));
   z.addFile('failure.yaml', Buffer.from('failed: 1\n'));
   // S2: failed at step 5
@@ -19,15 +19,15 @@ function syntheticPack(dir: string): string {
   z.addFile('tests/t-s2/logs/0-network.har', Buffer.from('{"cookies":"secret"}'));
   z.addFile('tests/t-s2/logs/0-console.ndjson', Buffer.from('{}'));
   z.addFile('tests/t-s2/logs/0-actions.ndjson', Buffer.from('{}'));
-  z.addFile('tests/t-s2/steps/4-open/screenshot.png', png);
-  z.addFile('tests/t-s2/steps/5-verify/screenshot.png', png);
+  z.addFile(`tests/t-s2/steps/4-open/screenshot.${ext}`, png);
+  z.addFile(`tests/t-s2/steps/5-verify/screenshot.${ext}`, png);
   z.addFile('tests/t-s2/steps/5-verify/annotated.png', png);
   z.addFile('tests/t-s2/steps/5-verify/step.json', Buffer.from('{}'));
   z.addFile('tests/t-s2/steps/5-verify/failure.yaml', Buffer.from(
     'error:\n  message: "Expected Invoice not found"\nexpected: Invoice not found\nactual: "Client: Umbrella"\n'));
   // S1: passed
   z.addFile('tests/t-s1/result.yaml', Buffer.from('path: tests/authz/S1_owner_reads_own_test.md\nstatus: passed\nsteps:\n  - {ordinal: 1, status: passed}\n'));
-  z.addFile('tests/t-s1/steps/1-open/screenshot.png', png);
+  z.addFile(`tests/t-s1/steps/1-open/screenshot.${ext}`, png);
   const p = join(dir, 'exec-1.evidence');
   z.writeZip(p);
   return p;
@@ -38,6 +38,8 @@ test('allow-list never lets HAR, console or action logs out', () => {
   assert.equal(isExportable('tests/x/result.yaml'), true);
   assert.equal(isExportable('tests/x/steps/5-a/failure.yaml'), true);
   assert.equal(isExportable('tests/x/steps/5-a/screenshot.png'), true);
+  assert.equal(isExportable('tests/x/steps/5-a/screenshot.jpg'), true);
+  assert.equal(isExportable('tests/x/steps/5-a/screenshot.jpeg'), true);
   assert.equal(isExportable('tests/x/steps/5-a/annotated.png'), false);
   assert.equal(isExportable('tests/x/logs/0-network.har'), false);
   assert.equal(isExportable('tests/x/logs/0-console.ndjson'), false);
@@ -81,4 +83,16 @@ test('test step parsing and labels', () => {
   assert.deepEqual(parseTestSteps(md), ['Sign in as Bob Use bob.', "Open /invoices/4 Verify 'Invoice not found'."]);
   assert.equal(scenarioLabel('tests/authz/S2_other_reads_by_url_test.md'), 'S2');
   assert.equal(scenarioLabel('t-abc'), undefined);
+});
+
+
+test('real Kane JPEG screenshots are exported with their original extension and bytes', () => {
+  const root = mkdtempSync(join(tmpdir(), 'bugsy-jpeg-'));
+  const pack = syntheticPack(root, 'jpg');
+  const result = exportEvidence({ packPath: pack, executionId: 'jpeg', root, exportDir: 'evidence', members: [
+    { path: 'tests/authz/S2_other_reads_by_url_test.md', status: 'failed', failure: { message: 'denial', step_index: 5 } },
+  ] });
+  const failure = result.tests.find((t) => t.test_id === 't-s2')!;
+  assert.equal(failure.screenshot, join('evidence', 'jpeg', 'S2', '5-screenshot.jpg'));
+  assert.deepEqual(readFileSync(join(root, failure.screenshot!)), Buffer.from('ffd8ffe0', 'hex'));
 });

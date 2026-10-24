@@ -1,9 +1,64 @@
 {
   "version": 1,
   "app": "Ledger",
-  "generated_at": "2026-10-24T21:15:46.784Z",
-  "findings": [],
-  "history": [],
+  "generated_at": "2026-10-24T21:49:05.712Z",
+  "findings": [
+    {
+      "scenario": "S2_other_reads_by_url",
+      "verdict": "leak_confirmed",
+      "commit": "bd410a34120759e154aee87288d9495b6075e960",
+      "kane": {
+        "execution_id": "2c29d5fa-9e9e-4616-b253-ca2615a9d20e",
+        "failed_step": 5,
+        "failure_message": "Final verification failed: \"'Invoice not found' is shown and neither 'Umbrella' nor '$4,000.00' appears on the page.\"",
+        "screenshot": "evidence/2c29d5fa-9e9e-4616-b253-ca2615a9d20e/S2/27-screenshot.jpg"
+      }
+    },
+    {
+      "scenario": "S3_list_isolation",
+      "verdict": "denied_as_expected",
+      "commit": "bd410a34120759e154aee87288d9495b6075e960",
+      "kane": {
+        "execution_id": "2c29d5fa-9e9e-4616-b253-ca2615a9d20e"
+      }
+    }
+  ],
+  "history": [
+    {
+      "at": "2026-10-24T21:44:08.308Z",
+      "phase": "scan",
+      "commit": "bd410a34120759e154aee87288d9495b6075e960",
+      "execution_id": "2c29d5fa-9e9e-4616-b253-ca2615a9d20e",
+      "exit_code": 1,
+      "summary": "leak confirmed: S2_other_reads_by_url",
+      "outcomes": [
+        {
+          "scenario": "S1_owner_reads_own",
+          "kind": "control",
+          "status": "passed",
+          "verdict": "control_passed",
+          "reason": "passed"
+        },
+        {
+          "scenario": "S2_other_reads_by_url",
+          "kind": "leak_check",
+          "status": "failed",
+          "verdict": "leak_confirmed",
+          "reason": "failed at step 5 (denial); control passed",
+          "failed_step": 5,
+          "failure_message": "Final verification failed: \"'Invoice not found' is shown and neither 'Umbrella' nor '$4,000.00' appears on the page.\"",
+          "screenshot": "evidence/2c29d5fa-9e9e-4616-b253-ca2615a9d20e/S2/27-screenshot.jpg"
+        },
+        {
+          "scenario": "S3_list_isolation",
+          "kind": "leak_check",
+          "status": "passed",
+          "verdict": "denied_as_expected",
+          "reason": "denied, and the owner control passed"
+        }
+      ]
+    }
+  ],
   "scenarios": [
     {
       "id": "S1_owner_reads_own",
@@ -56,5 +111,36 @@
       ],
       "control_id": "S1_owner_reads_own"
     }
-  ]
+  ],
+  "scan": {
+    "commit": "bd410a34120759e154aee87288d9495b6075e960",
+    "execution_id": "2c29d5fa-9e9e-4616-b253-ca2615a9d20e",
+    "used_prepared_tests": false,
+    "outcomes": [
+      {
+        "scenario": "S1_owner_reads_own",
+        "kind": "control",
+        "status": "passed",
+        "verdict": "control_passed",
+        "reason": "passed"
+      },
+      {
+        "scenario": "S2_other_reads_by_url",
+        "kind": "leak_check",
+        "status": "failed",
+        "verdict": "leak_confirmed",
+        "reason": "failed at step 5 (denial); control passed",
+        "failed_step": 5,
+        "failure_message": "Final verification failed: \"'Invoice not found' is shown and neither 'Umbrella' nor '$4,000.00' appears on the page.\"",
+        "screenshot": "evidence/2c29d5fa-9e9e-4616-b253-ca2615a9d20e/S2/27-screenshot.jpg"
+      },
+      {
+        "scenario": "S3_list_isolation",
+        "kind": "leak_check",
+        "status": "passed",
+        "verdict": "denied_as_expected",
+        "reason": "denied, and the owner control passed"
+      }
+    ]
+  }
 }
