@@ -1,7 +1,7 @@
 {
   "version": 1,
   "app": "Ledger",
-  "generated_at": "2026-10-24T21:49:05.712Z",
+  "generated_at": "2026-10-24T21:54:40.409Z",
   "findings": [
     {
       "scenario": "S2_other_reads_by_url",
@@ -12,6 +12,26 @@
         "failed_step": 5,
         "failure_message": "Final verification failed: \"'Invoice not found' is shown and neither 'Umbrella' nor '$4,000.00' appears on the page.\"",
         "screenshot": "evidence/2c29d5fa-9e9e-4616-b253-ca2615a9d20e/S2/27-screenshot.jpg"
+      },
+      "patch": {
+        "commit": "16216a9f1252e652b10d9d9116a443f1ae993bc8",
+        "files": [
+          "app/src/routes/invoices.ts"
+        ],
+        "diff": "diff --git a/app/src/routes/invoices.ts b/app/src/routes/invoices.ts\n--- a/app/src/routes/invoices.ts\n+++ b/app/src/routes/invoices.ts\n@@ -39,8 +39,7 @@\n invoices.get(\"/invoices/:id\", (req, res) => {\n-  // NOTE: no ownership check here (seeded for the demo)\n-  const row = db.prepare(\"SELECT * FROM invoices WHERE id = ?\").get(req.params.id) as Invoice | undefined;\n+  const row = db.prepare(\"SELECT * FROM invoices WHERE id = ? AND owner_id = ?\").get(req.params.id, req.session.userId) as Invoice | undefined;\n   if (!row) return res.status(404).render(\"not-found\");\n   const banner = req.session.banner ?? null;\n   delete req.session.banner;\n   res.render(\"detail\", { inv: view(row), banner });\n });\n",
+        "patcher": "codex",
+        "rationale": "Proposed by codex exec"
+      },
+      "rerun": {
+        "execution_id": "246f93ef-d7f5-407e-afa6-4ec540cc489c",
+        "S1": "passed",
+        "S2": "passed",
+        "S3": "passed"
+      },
+      "verify": {
+        "commit": "16216a9f1252e652b10d9d9116a443f1ae993bc8",
+        "execution_id": "ac202a1e-9bf8-4bc0-8aab-c8458a2f2a59",
+        "ok": true
       }
     },
     {
@@ -48,6 +68,68 @@
           "failed_step": 5,
           "failure_message": "Final verification failed: \"'Invoice not found' is shown and neither 'Umbrella' nor '$4,000.00' appears on the page.\"",
           "screenshot": "evidence/2c29d5fa-9e9e-4616-b253-ca2615a9d20e/S2/27-screenshot.jpg"
+        },
+        {
+          "scenario": "S3_list_isolation",
+          "kind": "leak_check",
+          "status": "passed",
+          "verdict": "denied_as_expected",
+          "reason": "denied, and the owner control passed"
+        }
+      ]
+    },
+    {
+      "at": "2026-10-24T21:53:47.812Z",
+      "phase": "patch",
+      "commit": "16216a9f1252e652b10d9d9116a443f1ae993bc8",
+      "execution_id": "246f93ef-d7f5-407e-afa6-4ec540cc489c",
+      "exit_code": 0,
+      "summary": "green; committed 16216a9",
+      "outcomes": [
+        {
+          "scenario": "S1_owner_reads_own",
+          "kind": "control",
+          "status": "passed",
+          "verdict": "control_passed",
+          "reason": "passed"
+        },
+        {
+          "scenario": "S2_other_reads_by_url",
+          "kind": "leak_check",
+          "status": "passed",
+          "verdict": "denied_as_expected",
+          "reason": "denied, and the owner control passed"
+        },
+        {
+          "scenario": "S3_list_isolation",
+          "kind": "leak_check",
+          "status": "passed",
+          "verdict": "denied_as_expected",
+          "reason": "denied, and the owner control passed"
+        }
+      ]
+    },
+    {
+      "at": "2026-10-24T21:54:40.409Z",
+      "phase": "verify",
+      "commit": "16216a9f1252e652b10d9d9116a443f1ae993bc8",
+      "execution_id": "ac202a1e-9bf8-4bc0-8aab-c8458a2f2a59",
+      "exit_code": 0,
+      "summary": "fix re-verified on 16216a9",
+      "outcomes": [
+        {
+          "scenario": "S1_owner_reads_own",
+          "kind": "control",
+          "status": "passed",
+          "verdict": "control_passed",
+          "reason": "passed"
+        },
+        {
+          "scenario": "S2_other_reads_by_url",
+          "kind": "leak_check",
+          "status": "passed",
+          "verdict": "denied_as_expected",
+          "reason": "denied, and the owner control passed"
         },
         {
           "scenario": "S3_list_isolation",
