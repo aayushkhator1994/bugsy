@@ -6,7 +6,7 @@
 *.key
 
 # deps / build
-node_modules/
+node_modules
 dist/
 *.log
 
@@ -27,3 +27,7 @@ bugsy/.calls/raw/
 
 # hack-gtm render output (video pipeline downloads a headless Chrome here)
 launch/remotion/node_modules/
+
+# Local Kane assurance state and raw Bugsy runner logs
+.context/
+bugsy/.run/
