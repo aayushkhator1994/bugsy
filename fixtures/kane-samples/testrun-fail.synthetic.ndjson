@@ -1,0 +1,16 @@
+{"type":"stream_start","cli_version":"0.10.0","surface":"testrun","pid":41001,"v":1,"ts":"2026-10-24T14:10:00.000Z"}
+{"type":"testrun_plan","members":[{"path":"tests/authz/S1_owner_reads_own_test.md","tags":["authz"]},{"path":"tests/authz/S2_other_reads_by_url_test.md","tags":["authz"]},{"path":"tests/authz/S3_list_isolation_test.md","tags":["authz"]}],"valid":true,"parallel":1,"v":1,"ts":"2026-10-24T14:10:00.100Z"}
+{"type":"testrun_start","execution_id":"synthetic-exec-red-0001","members":["tests/authz/S1_owner_reads_own_test.md","tests/authz/S2_other_reads_by_url_test.md","tests/authz/S3_list_isolation_test.md"],"parallel":1,"v":1,"ts":"2026-10-24T14:10:00.200Z"}
+{"type":"testrun_member_start","path":"tests/authz/S1_owner_reads_own_test.md","session_id":"sess-s1","log_path":"/tmp/synthetic/s1/events.ndjson","v":1,"ts":"2026-10-24T14:10:00.300Z"}
+{"type":"testrun_progress","running":["tests/authz/S1_owner_reads_own_test.md"],"pending":2,"done":0,"total":3,"v":1,"ts":"2026-10-24T14:10:00.310Z"}
+{"type":"testrun_member_end","path":"tests/authz/S1_owner_reads_own_test.md","status":"passed","duration_s":41.2,"session_id":"sess-s1","log_path":"/tmp/synthetic/s1/events.ndjson","v":1,"ts":"2026-10-24T14:10:41.500Z"}
+this line is not JSON and must be skipped
+{"type":"testrun_member_start","path":"tests/authz/S2_other_reads_by_url_test.md","session_id":"sess-s2","log_path":"/tmp/synthetic/s2/events.ndjson","v":1,"ts":"2026-10-24T14:10:41.600Z"}
+{"type":"testrun_member_end","path":"tests/authz/S2_other_reads_by_url_test.md","status":"failed","duration_s":88.9,"session_id":"sess-s2","log_path":"/tmp/synthetic/s2/events.ndjson","failure":{"message":"Expected the page to show 'Invoice not found' but it shows 'Client: Umbrella' and '$4,000.00'","step_index":5},"v":1,"ts":"2026-10-24T14:12:10.500Z"}
+{"type":"testrun_member_start","path":"tests/authz/S3_list_isolation_test.md","session_id":"sess-s3","log_path":"/tmp/synthetic/s3/events.ndjson","v":1,"ts":"2026-10-24T14:12:10.600Z"}
+{"type":"testrun_member_end","path":"tests/authz/S3_list_isolation_test.md","status":"passed","duration_s":37.0,"session_id":"sess-s3","log_path":"/tmp/synthetic/s3/events.ndjson","v":1,"ts":"2026-10-24T14:12:47.600Z"}
+{"type":"some_future_event","detail":"unknown types must be tolerated","v":1,"ts":"2026-10-24T14:12:47.700Z"}
+{"type":"testrun_evidence_ingest","status":"ok","evidence_id":"ev-synthetic-red","v":1,"ts":"2026-10-24T14:12:50.000Z"}
+{"type":"testrun_summary","totals":{"tests":3,"passed":2,"failed":1,"broken":0,"skipped":0,"authored":0},"duration_s":167.3,"upload":"ok","cancelled":false,"execution":{"id":"synthetic-exec-red-0001","status":"failed"},"v":1,"ts":"2026-10-24T14:12:50.100Z"}
+{"type":"testrun_done","execution_id":"synthetic-exec-red-0001","overall_status":"failed","v":1,"ts":"2026-10-24T14:12:50.200Z"}
+{"type":"kanehack_report","run":"KR-SYNTHETIC","exit_code":1,"note":"synthetic wrapper line; real shape unknown"}

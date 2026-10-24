@@ -66,3 +66,4 @@ Filled in from real runs. Every line links a Kane execution id.
 - Sequential runs, one browser, sign-out/sign-in between accounts.
 - Not a scanner: it checks the rule you state, not every route for every bug.
 - The demo accounts and passwords are seeded test data and are committed on purpose.
+- `fixtures/prepared/` holds fallback tests and a fallback patch written by hand before the event's live runs. Bugsy prints `USING PREPARED TESTS` / `USING PREPARED PATCH` whenever it uses them, and the report records it.
