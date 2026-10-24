@@ -69,11 +69,10 @@ program
   .command('self-check')
   .description('revert the patch, rerun the leak check, expect red, always restore')
   .argument('[scenario]', 'scenario id (default: the last patched finding)')
-  .option('--leak-only', 'run only the leak test, not its owner control')
   .action((scenario: string | undefined, o) =>
     main(async () => {
       const { selfCheck } = await import('./selfcheck.ts');
-      return selfCheck(ctx(), scenario, { leakOnly: o.leakOnly });
+      return selfCheck(ctx(), scenario, {});
     }),
   );
 

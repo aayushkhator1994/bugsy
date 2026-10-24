@@ -108,11 +108,27 @@ export interface TestrunOptions {
   match?: string;
   label?: string; // objective for kanehack
   report: boolean; // wrap with kanehack report
+  cwd?: string; // where testsDir is resolved from (default process.cwd())
+}
+
+/** The `*_test.md` members in a tests dir, project-relative, sorted; filtered by `match` when given.
+ *  `testrun run` takes files, not a directory (a directory argument fails preflight as "not a *_test.md file"). */
+export function testFiles(testsDir: string, match?: string, cwd = process.cwd()): string[] {
+  const dir = resolve(cwd, testsDir);
+  if (!existsSync(dir)) return [];
+  const re = match ? new RegExp(match) : null;
+  return readdirSync(dir)
+    .filter((f) => f.endsWith('_test.md'))
+    .sort()
+    .map((f) => join(testsDir, f))
+    .filter((p) => !re || re.test(p));
 }
 
 export function testrunArgs(o: TestrunOptions): string[] {
+  const files = testFiles(o.testsDir, o.match, o.cwd);
+  if (files.length === 0) throw new Error(`no *_test.md files in ${o.testsDir}${o.match ? ` matching ${o.match}` : ''}`);
   const args = [
-    'testrun', 'run', o.testsDir,
+    'testrun', 'run', ...files,
     '--parallel', '1',
     '--no-adaptive-heal',
     '--bug-detection', 'off',

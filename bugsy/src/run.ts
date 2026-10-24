@@ -34,6 +34,7 @@ export async function executeRun(
         match: o.match,
         label: o.label,
         report: ctx.report,
+        cwd: ctx.root,
       },
       {
         cwd: ctx.root,
@@ -83,7 +84,9 @@ export function judgeRun(ctx: Ctx, run: RunResult, scenarios: Scenario[]): Judge
       }
     }
   }
-  const outcomes = evaluate({ scenarios, members: run.members, packPresent: !!exported, steps, evidence });
+  const completed = run.state.done && !!run.execution_id && run.members.length > 0;
+  if (!completed) ctx.log('  Kane run did not complete cleanly: every verdict is inconclusive');
+  const outcomes = evaluate({ scenarios, members: run.members, packPresent: !!exported, completed, steps, evidence });
   return { outcomes, exported };
 }
 

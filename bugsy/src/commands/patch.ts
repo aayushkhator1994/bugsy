@@ -19,6 +19,9 @@ export interface PatchOptions {
 
 const PATCH_CAP_MS = 130_000;
 
+// Human output. Under --json it goes to stderr so stdout stays one JSON document.
+let say: (s: string) => void = (s) => console.log(s);
+
 function readSources(root: string, globs: string[]) {
   const files = fg.sync(globs, { cwd: root, onlyFiles: true, dot: false });
   return files.sort().map((p) => ({ path: p, content: readFileSync(resolve(root, p), 'utf8') }));
@@ -53,6 +56,7 @@ async function propose(ctx: Ctx, scenario: Scenario, o: PatchOptions, input: {
 }
 
 export async function patch(ctx: Ctx, scenarioId: string, o: PatchOptions): Promise<number> {
+  say = ctx.json ? (s) => console.error(s) : (s) => console.log(s);
   const report = loadReport(ctx.root);
   const finding = getFinding(report, scenarioId);
   if (!finding || finding.verdict !== 'leak_confirmed') {
@@ -90,9 +94,9 @@ export async function patch(ctx: Ctx, scenarioId: string, o: PatchOptions): Prom
   const dirty = await git.dirtyAmong(ctx.root, files);
   if (dirty.length) throw new BugsyError(`files the patch touches have local changes: ${dirty.join(', ')}`);
 
-  console.log(`--- patch (${p.patcher}) for ${scenarioId}: ${files.join(', ')}`);
-  console.log(p.diff.trimEnd());
-  console.log('---');
+  say(`--- patch (${p.patcher}) for ${scenarioId}: ${files.join(', ')}`);
+  say(p.diff.trimEnd());
+  say('---');
 
   await git.apply(ctx.root, p.diff);
   let committed = false;
@@ -103,7 +107,7 @@ export async function patch(ctx: Ctx, scenarioId: string, o: PatchOptions): Prom
     const rerun: Record<string, string | null> & { execution_id: string | null } = { execution_id: run.execution_id };
     for (const oc of outcomes) rerun[oc.scenario.split('_')[0]!] = oc.status;
 
-    for (const oc of outcomes) console.log(formatOutcome(oc));
+    for (const oc of outcomes) say(formatOutcome(oc));
     if (patchMayCommit(outcomes)) {
       const red = finding.kane.execution_id ?? '?';
       const msg = `fix(authz): ${scenarioId} — Kane ${red} red on ${git.short(finding.commit)}, ${run.execution_id ?? '?'} green on this commit`;
@@ -112,14 +116,14 @@ export async function patch(ctx: Ctx, scenarioId: string, o: PatchOptions): Prom
       finding.patch = { commit: B, files, diff: p.diff, patcher: p.patcher, rationale: p.rationale };
       finding.rerun = rerun;
       pushHistory(report, { phase: 'patch', commit: B, execution_id: run.execution_id, exit_code: run.exit_code, summary: `green; committed ${git.short(B)}`, outcomes });
-      console.log(`committed ${git.short(B)}: ${msg}`);
+      say(`committed ${git.short(B)}: ${msg}`);
 
       // The hub counts "fix re-verified" only from a passing run on a different commit than the
       // failing one. The green run above happened on A+patch (dirty tree), so run once more at B.
       ctx.log(`  re-verifying on the committed fix ${git.short(B)}…`);
       const verify = await executeRun(ctx, { phase: 'verify', sha: B, label: `bugsy:verify ${scenarioId} on ${git.short(B)}` });
       const verdict = judgeRun(ctx, verify, scenarios);
-      for (const oc of verdict.outcomes) console.log(formatOutcome(oc));
+      for (const oc of verdict.outcomes) say(formatOutcome(oc));
       (finding as { verify?: unknown }).verify = { commit: B, execution_id: verify.execution_id, ok: patchMayCommit(verdict.outcomes) };
       pushHistory(report, {
         phase: 'verify',
@@ -129,7 +133,7 @@ export async function patch(ctx: Ctx, scenarioId: string, o: PatchOptions): Prom
         summary: patchMayCommit(verdict.outcomes) ? `fix re-verified on ${git.short(B)}` : `verify run on ${git.short(B)} did not pass cleanly; inspect before the demo`,
         outcomes: verdict.outcomes,
       });
-      console.log('next: bugsy self-check');
+      say('next: bugsy self-check');
     } else {
       pushHistory(report, {
         phase: 'patch',
@@ -139,7 +143,7 @@ export async function patch(ctx: Ctx, scenarioId: string, o: PatchOptions): Prom
         summary: `refused: not every leak check denied with its control passing (${outcomes.map((x) => `${x.scenario.split('_')[0]} ${x.verdict}`).join(', ')})`,
         outcomes,
       });
-      console.log('REFUSED: the patched app did not pass every scenario (leak checks denied AND controls passing). Patch reverted.');
+      say('REFUSED: the patched app did not pass every scenario (leak checks denied AND controls passing). Patch reverted.');
     }
     saveReport(ctx.root, report);
     writeHtml(ctx.root, report);

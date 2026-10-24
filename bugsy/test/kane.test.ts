@@ -1,7 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
 import {
   parseTestrunOutput, parseLine, testrunArgs, foldAssurance, resumeArgs, shellSplit,
 } from '../src/kane.ts';
@@ -56,12 +57,19 @@ test('parseLine ignores non-objects', () => {
   assert.deepEqual(parseLine(' {"a":1} '), { a: 1 });
 });
 
-test('testrun args follow the spec', () => {
-  const a = testrunArgs({ testsDir: 'tests/authz', phase: 'scan', sha: 'abcdef0123456', report: false, match: 'S2' });
+test('testrun args follow the spec: files, not a directory', () => {
+  // `testrun run` refuses a directory argument ("not a *_test.md file"), so members are listed explicitly.
+  const cwd = mkdtempSync(join(tmpdir(), 'bugsy-args-'));
+  mkdirSync(join(cwd, 'tests/authz'), { recursive: true });
+  for (const f of ['S1_owner_reads_own_test.md', 'S2_other_reads_by_url_test.md', 'notes.md']) writeFileSync(join(cwd, 'tests/authz', f), '# x\n');
+  const a = testrunArgs({ testsDir: 'tests/authz', phase: 'scan', sha: 'abcdef0123456', report: false, cwd });
   assert.deepEqual(a, [
-    'testrun', 'run', 'tests/authz', '--parallel', '1', '--no-adaptive-heal', '--bug-detection', 'off', '--agent',
-    '--name', 'bugsy:scan:abcdef0', '--match', 'S2',
+    'testrun', 'run', 'tests/authz/S1_owner_reads_own_test.md', 'tests/authz/S2_other_reads_by_url_test.md',
+    '--parallel', '1', '--no-adaptive-heal', '--bug-detection', 'off', '--agent', '--name', 'bugsy:scan:abcdef0',
   ]);
+  const only = testrunArgs({ testsDir: 'tests/authz', phase: 'scan', sha: 'abcdef0123456', report: false, cwd, match: 'S2' });
+  assert.deepEqual(only.slice(0, 3), ['testrun', 'run', 'tests/authz/S2_other_reads_by_url_test.md']);
+  assert.throws(() => testrunArgs({ testsDir: 'tests/none', phase: 'scan', sha: 'abc', report: false, cwd }), /no \*_test\.md files/);
 });
 
 test('assurance fold + resume command', () => {

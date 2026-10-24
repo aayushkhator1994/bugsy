@@ -7,6 +7,8 @@ export interface VerdictInput {
   members: KaneMember[];
   /** the run's evidence pack was found and read */
   packPresent: boolean;
+  /** the Kane run completed (testrun_done seen, execution id known); false makes every verdict inconclusive */
+  completed?: boolean;
   /** per scenario id: the step texts of its _test.md (## headings + body), for locating the failed step */
   steps?: Record<string, string[]>;
   /** per scenario id: failed step / screenshot from the evidence export, to enrich the outcome */
@@ -89,8 +91,8 @@ export function judgeLeak(
   if (signInStep) return inc('sign-in step failed');
 
   if (markers.length === 0) {
-    // no quoted denial text to anchor on: accept a failure that is not on a sign-in step
-    return { verdict: 'leak_confirmed', reason: `failed at step ${idx}; control passed` };
+    // no denial text to anchor on: a failure cannot be attributed to the leak (§7)
+    return inc(`failed at step ${idx}, but the scenario has no denial text to attribute it to`);
   }
   if (!atDenial) return inc(`failed at step ${idx}, not at the denial step`);
   return { verdict: 'leak_confirmed', reason: `failed at step ${idx} (denial); control passed` };
@@ -109,6 +111,8 @@ export function evaluate(input: VerdictInput): ScenarioOutcome[] {
       verdict: 'inconclusive',
       reason: '',
     };
+    // An incomplete run (cancelled, timed out, no completion event) proves nothing, whatever the pack holds.
+    if (input.completed === false) return { ...base, reason: 'run did not complete (no completion event / execution id)' };
     const step = m?.failure?.step_index ?? ev?.failed_step;
     if (step !== undefined && m?.status !== 'passed') base.failed_step = step;
     // prefer the pack's expected/saw detail; fall back to the stream's failure message
