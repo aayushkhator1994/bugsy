@@ -72,3 +72,21 @@ Expected
 - The text 'Client: Initech' is not visible
 
 Control: S1_owner_reads_own
+
+## S5_other_marks_paid: Another user cannot mark my invoice as paid by sending the request directly
+
+A signed-in user must not be able to change an invoice owned by another user, even by sending the change request directly instead of using the invoice page; the owner's invoice keeps its status.
+
+Steps
+
+1. Sign in as Alice.
+2. While signed in as Alice, send the mark-as-paid request for invoice 4 directly (POST /invoices/4/pay) from Alice's browser session, without opening invoice 4's page.
+3. Sign out.
+4. Sign in as Bob.
+5. Open /invoices/4 and confirm the page shows Status: Unpaid.
+
+Expected
+
+- The page shows 'Status: Unpaid'
+
+Control: S1_owner_reads_own

@@ -42,12 +42,13 @@ footer{padding:12px 0 40px;text-align:center;color:var(--muted);font-size:13px}f
 @media(max-width:600px){.word{font-size:24px}.vlabel{font-size:24px}.panel{padding:18px 16px}.k{display:block;min-width:0}main.wrap{padding:18px 14px 4px}header .wrap{padding:20px 14px}}
 </style></head><body>
 <header><div class="wrap"><div class="brand"><div class="mark">B</div><div><div class="word">Bugsy</div><p class="tag">Security seatbelt for vibe-coded apps</p></div></div>
-<div class="facts"><span>App <b>Ledger</b></span><span>Commits <code>7a533f5</code> <code>bd410a3</code> <code>16216a9</code> <code>bb5c31c</code></span><span>Generated <b>2026-10-24T22:59:06.345Z</b></span></div></div></header>
+<div class="facts"><span>App <b>Ledger</b></span><span>Commits <code>bc260a9</code> <code>bd410a3</code> <code>16216a9</code> <code>e974c59</code> <code>5c65d51</code> <code>bb5c31c</code> <code>7a533f5</code> <code>78fa5a9</code> <code>c5e1411</code></span><span>Generated <b>2026-10-24T23:44:09.772Z</b></span></div></div></header>
 <main class="wrap">
 <section class="strip"><div class="vcard good"><div class="sid">S2</div><div class="vlabel">Denied as expected</div>
 <div class="vtitle">Another user&#39;s invoice is denied when opened directly</div><div class="vreason">denied, and the owner control passed</div><div class="ctl">owner control S1: <b>passed</b></div><div class="fixed">Patched and re-verified</div></div><div class="vcard good"><div class="sid">S3</div><div class="vlabel">Denied as expected</div>
-<div class="vtitle">Invoice list excludes another user&#39;s invoices</div><div class="vreason">denied, and the owner control passed</div><div class="ctl">owner control S1: <b>passed</b></div></div><div class="vcard bad"><div class="sid">S4</div><div class="vlabel">Leak confirmed</div>
-<div class="vtitle">Signed out, but still visible: Back after sign-out must not show account pages</div><div class="vreason">failed at step 4 (denial); control passed</div><div class="ctl">owner control S1: <b>passed</b></div></div></section>
+<div class="vtitle">Invoice list excludes another user&#39;s invoices</div><div class="vreason">denied, and the owner control passed</div><div class="ctl">owner control S1: <b>passed</b></div></div><div class="vcard good"><div class="sid">S4</div><div class="vlabel">Denied as expected</div>
+<div class="vtitle">Signed out, but still visible: Back after sign-out must not show account pages</div><div class="vreason">denied, and the owner control passed</div><div class="ctl">owner control S1: <b>passed</b></div></div><div class="vcard good"><div class="sid">S5</div><div class="vlabel">Denied as expected</div>
+<div class="vtitle">Another user cannot mark my invoice as paid by sending the request directly</div><div class="vreason">denied, and the owner control passed</div><div class="ctl">owner control S1: <b>passed</b></div><div class="fixed">Patched and re-verified</div></div></section>
 <section class="panel"><div class="ph"><h2>Finding S2</h2><span class="pill bad">Leak confirmed</span></div>
 <h3>Another user&#39;s invoice is denied when opened directly</h3>
 <p class="req">Opening an invoice owned by another user must show a not-found message without revealing its client or amount.</p>
@@ -72,18 +73,30 @@ footer{padding:12px 0 40px;text-align:center;color:var(--muted);font-size:13px}f
 
 
 
-<section class="panel"><div class="ph"><h2>Finding S4</h2><span class="pill bad">Leak confirmed</span></div>
-<h3>Signed out, but still visible: Back after sign-out must not show account pages</h3>
-<p class="req">After a user signs out, pressing the browser Back button must not show any page from their account; the sign-in page is shown instead.</p>
+
+
+
+<section class="panel"><div class="ph"><h2>Finding S5</h2><span class="pill bad">Leak confirmed</span></div>
+<h3>Another user cannot mark my invoice as paid by sending the request directly</h3>
+<p class="req">A signed-in user must not be able to change an invoice owned by another user, even by sending the change request directly instead of using the invoice page; the owner&#39;s invoice keeps its status.</p>
 <div class="fail">
-<div><span class="k">Failing step 4</span> Press the browser Back button</div>
-<div><span class="k">Expected</span> The text &#39;Client: Initech&#39; is not visible</div>
+<div><span class="k">Failing step</span> step 6</div>
+<div><span class="k">Expected</span> The page shows &#39;Status: Unpaid&#39;</div>
 
 </div>
-<a href="evidence/1fac2fc6-35b8-4c92-99bb-e95af88fa683/S4/14-screenshot.jpg"><img class="shot" alt="Kane screenshot of the failing step" src="evidence/1fac2fc6-35b8-4c92-99bb-e95af88fa683/S4/14-screenshot.jpg"></a><p class="cap">Screenshot captured by Kane CLI in a real browser</p>
-<div class="meta"><span>Kane execution <code>1fac2fc6-35b8-4c92-99bb-e95af88fa683</code></span><span>commit <code>7a533f5</code></span></div></section>
-
-
+<a href="evidence/c0721a53-4f7d-4817-b342-4d2489eeba7e/S5/27-screenshot.jpg"><img class="shot" alt="Kane screenshot of the failing step" src="evidence/c0721a53-4f7d-4817-b342-4d2489eeba7e/S5/27-screenshot.jpg"></a><p class="cap">Screenshot captured by Kane CLI in a real browser</p>
+<div class="meta"><span>Kane execution <code>c0721a53-4f7d-4817-b342-4d2489eeba7e</code></span><span>commit <code>e974c59</code></span></div></section>
+<section class="panel"><div class="ph"><h2>The fix</h2><span class="pill good">Patched by codex</span></div>
+<div class="meta"><span>commit <code>5c65d51</code></span><span>files <code>app/src/routes/invoices.ts</code></span></div>
+<p class="req">Proposed by codex exec</p>
+<pre class="diff"><span class="">diff --git a/app/src/routes/invoices.ts b/app/src/routes/invoices.ts</span><span class="">--- a/app/src/routes/invoices.ts</span><span class="">+++ b/app/src/routes/invoices.ts</span><span class="hunk">@@ -48,8 +48,7 @@ invoices.get(&quot;/invoices/:id&quot;, (req, res) =&gt; {</span><span class=""> });</span><span class=""> </span><span class=""> invoices.post(&quot;/invoices/:id/pay&quot;, (req, res) =&gt; {</span><span class="del">-  // Also no ownership check (scenario S4).</span><span class="del">-  const info = db.prepare(&quot;UPDATE invoices SET status = &#39;Paid&#39; WHERE id = ?&quot;).run(req.params.id);</span><span class="add">+  const info = db.prepare(&quot;UPDATE invoices SET status = &#39;Paid&#39; WHERE id = ? AND owner_id = ?&quot;).run(req.params.id, req.session.userId);</span><span class="">   if (info.changes === 0) return res.status(404).render(&quot;not-found&quot;);</span><span class="">   req.session.banner = `Invoice #${req.params.id} marked as paid`;</span><span class="">   res.redirect(`/invoices/${req.params.id}`);</span><span class=""></span></pre>
+<h3>Rerun</h3><p class="meta">Kane execution <code>cd29da08-d7a9-46c0-948f-15001b47ae87</code></p><table class="rr"><thead><tr><th>Scenario</th><th>Result</th></tr></thead><tbody><tr><td>S1</td><td><span class="pill good">pass</span></td></tr><tr><td>S5</td><td><span class="pill good">pass</span></td></tr></tbody></table>
+<p class="ok">Re-verified on <code>5c65d51</code> · Kane execution <code>b632d08b-b124-4232-878d-922ac67482e2</code></p></section>
+<section class="panel"><div class="ph"><h2>Does the test actually test?</h2><span class="pill good">Yes</span></div>
+<ol class="steps"><li><span class="n">1</span>Patch reverted</li><li><span class="n">2</span>S5 failed again</li><li><span class="n">3</span>Patch restored</li></ol>
+<p class="ok">The test fails when the fix is removed, so it really catches this leak.</p>
+<p class="muted">Recorded assertion failed; later RCA classified it as automation_bug/test_data_issue (raw evidence status: broken).</p>
+<div class="meta"><span>tests_detect_leak: <b>yes</b></span><span>Kane execution <code>066b01dc-b470-47fb-9226-8186ace8d587</code></span></div></section>
 <section class="panel"><div class="ph"><h2>Timeline</h2></div><ol class="tl"><li><div class="dot bad"></div><div class="tb"><div class="th"><b>scan</b><span class="muted small">2026-10-24T21:44:08.308Z</span></div>
 <div>leak confirmed: S2_other_reads_by_url</div><div class="meta small"><span>commit <code>bd410a3</code></span><span>Kane execution <code>2c29d5fa-9e9e-4616-b253-ca2615a9d20e</code></span></div></div></li><li><div class="dot good"></div><div class="tb"><div class="th"><b>patch</b><span class="muted small">2026-10-24T21:53:47.812Z</span></div>
 <div>green; committed 16216a9</div><div class="meta small"><span>commit <code>16216a9</code></span><span>Kane execution <code>246f93ef-d7f5-407e-afa6-4ec540cc489c</code></span></div></div></li><li><div class="dot good"></div><div class="tb"><div class="th"><b>verify</b><span class="muted small">2026-10-24T21:54:40.409Z</span></div>
@@ -91,7 +104,13 @@ footer{padding:12px 0 40px;text-align:center;color:var(--muted);font-size:13px}f
 <div>patch 16216a9 reverted; S2 failed; tests did NOT detect the leak</div><div class="meta small"><span>commit <code>bb5c31c</code></span><span>Kane execution <code>6173e8eb-e879-4feb-ac28-2654b42991f9</code></span></div></div></li><li><div class="dot good"></div><div class="tb"><div class="th"><b>scan</b><span class="muted small">2026-10-24T22:14:01.632Z</span></div>
 <div>S1 control_passed, S2 denied_as_expected, S3 denied_as_expected</div><div class="meta small"><span>commit <code>bb5c31c</code></span><span>Kane execution <code>5c6d42cf-98be-4d8e-ab22-f0ec47f85955</code></span></div></div></li><li><div class="dot bad"></div><div class="tb"><div class="th"><b>self-check</b><span class="muted small">2026-10-24T22:30:06.671Z</span></div>
 <div>Offline re-evaluation of saved revert run: denial assertion failed, owner passed; later RCA classification retained separately. No new Kane execution.</div><div class="meta small"><span>commit <code>bb5c31c</code></span><span>Kane execution <code>6173e8eb-e879-4feb-ac28-2654b42991f9</code></span></div></div></li><li><div class="dot bad"></div><div class="tb"><div class="th"><b>scan</b><span class="muted small">2026-10-24T22:59:06.345Z</span></div>
-<div>leak confirmed: S4_signed_out_back_button</div><div class="meta small"><span>commit <code>7a533f5</code></span><span>Kane execution <code>1fac2fc6-35b8-4c92-99bb-e95af88fa683</code></span></div></div></li></ol></section>
+<div>leak confirmed: S4_signed_out_back_button</div><div class="meta small"><span>commit <code>7a533f5</code></span><span>Kane execution <code>1fac2fc6-35b8-4c92-99bb-e95af88fa683</code></span></div></div></li><li><div class="dot bad"></div><div class="tb"><div class="th"><b>scan</b><span class="muted small">2026-10-24T23:36:16.712Z</span></div>
+<div>leak confirmed: S5_other_marks_paid</div><div class="meta small"><span>commit <code>e974c59</code></span><span>Kane execution <code>c0721a53-4f7d-4817-b342-4d2489eeba7e</code></span></div></div></li><li><div class="dot good"></div><div class="tb"><div class="th"><b>patch</b><span class="muted small">2026-10-24T23:38:32.899Z</span></div>
+<div>green; committed 5c65d51</div><div class="meta small"><span>commit <code>5c65d51</code></span><span>Kane execution <code>cd29da08-d7a9-46c0-948f-15001b47ae87</code></span></div></div></li><li><div class="dot good"></div><div class="tb"><div class="th"><b>verify</b><span class="muted small">2026-10-24T23:39:01.351Z</span></div>
+<div>fix re-verified on 5c65d51</div><div class="meta small"><span>commit <code>5c65d51</code></span><span>Kane execution <code>b632d08b-b124-4232-878d-922ac67482e2</code></span></div></div></li><li><div class="dot bad"></div><div class="tb"><div class="th"><b>self-check</b><span class="muted small">2026-10-24T23:40:04.796Z</span></div>
+<div>patch 5c65d51 reverted; S5 failed; tests did NOT detect the leak</div><div class="meta small"><span>commit <code>78fa5a9</code></span><span>Kane execution <code>ddb72dd6-0b8e-456e-b0d9-15b8b405b07e</code></span></div></div></li><li><div class="dot bad"></div><div class="tb"><div class="th"><b>self-check</b><span class="muted small">2026-10-24T23:42:22.465Z</span></div>
+<div>patch 5c65d51 reverted; S5 failed; tests detect the leak</div><div class="meta small"><span>commit <code>c5e1411</code></span><span>Kane execution <code>066b01dc-b470-47fb-9226-8186ace8d587</code></span></div></div></li><li><div class="dot good"></div><div class="tb"><div class="th"><b>scan</b><span class="muted small">2026-10-24T23:44:09.772Z</span></div>
+<div>S1 control_passed, S2 denied_as_expected, S3 denied_as_expected, S4 denied_as_expected, S5 denied_as_expected</div><div class="meta small"><span>commit <code>bc260a9</code></span><span>Kane execution <code>b50b6a4b-9374-4290-8447-c9fec36bc321</code></span></div></div></li></ol></section>
 </main>
 <footer><div class="wrap"><p>Built with OpenAI, tested with Kane CLI. <b>#KaneCLIHackDay</b></p><p><a href="https://github.com/aayushkhator1994/bugsy">https://github.com/aayushkhator1994/bugsy</a></p></div></footer>
 </body></html>

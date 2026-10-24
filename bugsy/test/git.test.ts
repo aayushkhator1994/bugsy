@@ -80,3 +80,15 @@ test('self-check restore keeps uncommitted report changes untouched', async () =
   assert.equal(readFileSync(join(root, 'report.json'), 'utf8'), 'v2 (uncommitted)\n');
   assert.deepEqual(await git.porcelain(root), [' M report.json']);
 });
+
+test('patch: a diff with miscounted hunk header lines still applies (--recount)', async () => {
+  const { root } = await repo();
+  // the header claims 3 old / 2 new lines; the hunk body has 1 / 1
+  const miscounted = DIFF.replace('@@ -1 +1 @@', '@@ -1,3 +1,2 @@');
+  assert.deepEqual(await git.diffFiles(root, miscounted), ['app/src/routes/invoices.ts']);
+  assert.equal((await git.applyCheck(root, miscounted)).ok, true);
+  await git.apply(root, miscounted);
+  assert.match(readFileSync(join(root, 'app/src/routes/invoices.ts'), 'utf8'), /AND owner_id = \?/);
+  await git.unapply(root, miscounted, ['app/src/routes/invoices.ts']);
+  assert.doesNotMatch(readFileSync(join(root, 'app/src/routes/invoices.ts'), 'utf8'), /owner_id/);
+});

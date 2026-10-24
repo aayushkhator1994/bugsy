@@ -1,0 +1,35 @@
+step: 5-5
+status: broken
+error:
+  message: 'assertion_failed: @ step 5'
+  type: replay_failure
+page_state:
+  url: http://localhost:3197/invoices/4
+  screenshot: steps/26-5-5/screenshot.jpg
+locator_context:
+  replay_reason: 'assertion_failed: @ step 5'
+console_at_failure:
+  ref: logs/5-console.ndjson
+  step: 5-5
+network_at_failure:
+  ref: logs/5-network.har
+  step: 5-5
+title: Invoice status baseline is stale
+triage:
+  status: triaged
+  by:
+    kind: agent
+    id: v16-investigation/replay
+    at: '2026-10-24T23:42:18.913967+00:00'
+  rca:
+    root_cause: The recording relies on a changeable invoice status captured earlier.
+      The live invoice data has changed from Unpaid to Paid, so the saved baseline
+      is no longer valid.
+    category: automation_bug/test_data_issue
+    confidence: 0.95
+  verification:
+    status: not_verified
+  severity: minor
+  suggested_fix:
+    summary: 'Reset invoice #4 to Unpaid before replay, or create a dedicated fixed
+      invoice fixture and update the test to use it.'

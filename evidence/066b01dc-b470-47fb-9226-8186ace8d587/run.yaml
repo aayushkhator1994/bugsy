@@ -1,0 +1,18 @@
+evidence: '0.1'
+run_id: 066b01dc-b470-47fb-9226-8186ace8d587
+status: finalized
+title: bugsy:self-check:c5e1411
+started: '2026-10-24T23:41:26.367Z'
+environment:
+  producer:
+    name: kane-cli
+    version: 0.10.0-rc.3
+  origin: testrun
+  pid: 54950
+ended: 2026-10-24T23:42:19.438Z
+totals:
+  tests: 2
+  passed: 1
+  failed: 0
+  broken: 1
+  skipped: 0

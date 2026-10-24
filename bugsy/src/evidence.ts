@@ -119,9 +119,13 @@ function assertionBeforeRca(t: PackTest, member: KaneMember | undefined, executi
   if (steps.slice(0, -1).some((s) => s?.status !== 'passed')) return undefined;
   const failure = t.steps.get(Number(last.ordinal));
   const f = failure?.failure;
+  // A recorded step id is "<test step, 0-based>-<action within it>"; Kane's "assertion_failed: @ step N"
+  // names the action N, and the stream's step_index is the 1-based test step.
+  const at = /^(\d+)-(\d+)$/.exec(String(last.id ?? ''));
   const assertion = /^assertion_failed:\s*@ step (\d+)$/;
-  const step = assertion.exec(String(f?.error?.message ?? ''))?.[1];
-  if (!step || !Number.isInteger(member.failure?.step_index) || Number(step) !== member.failure?.step_index) return undefined;
+  const action = assertion.exec(String(f?.error?.message ?? ''))?.[1];
+  if (!at || !action || Number(action) !== Number(at[2])) return undefined;
+  if (!Number.isInteger(member.failure?.step_index) || Number(at[1]) + 1 !== member.failure?.step_index) return undefined;
   if (!assertion.test(member.failure?.message ?? '') || member.failure?.message !== f.error.message) return undefined;
   const category = f?.triage?.rca?.category;
   if (f?.error?.type !== 'replay_failure' || f.step !== last.id || f.status !== 'broken'
@@ -129,7 +133,7 @@ function assertionBeforeRca(t: PackTest, member: KaneMember | undefined, executi
     || typeof category !== 'string' || !category.startsWith('automation_bug/')
     || typeof f.triage?.rca?.root_cause !== 'string'
     || !failure?.screenshot) return undefined;
-  return { step_index: Number(step), rca_category: category };
+  return { step_index: member.failure!.step_index!, rca_category: category };
 }
 
 /** Which member (by file name) does this pack test belong to? */

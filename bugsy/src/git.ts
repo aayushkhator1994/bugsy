@@ -31,6 +31,8 @@ export async function dirtyAmong(root: string, files: string[]): Promise<string[
   return r.stdout.split('\n').filter(Boolean).map((l) => l.slice(3));
 }
 
+// Patchers sometimes miscount hunk header line numbers; every apply uses --recount so the hunk
+// bodies (context, - and + lines) decide, and a wrong count alone does not reject a correct change.
 function writeDiff(root: string, diff: string): string {
   const p = resolve(root, 'bugsy/.run/patch.diff');
   mkdirSync(resolve(p, '..'), { recursive: true });
@@ -41,7 +43,7 @@ function writeDiff(root: string, diff: string): string {
 /** Paths a diff touches (via `git apply --numstat`, which does not modify anything). */
 export async function diffFiles(root: string, diff: string): Promise<string[]> {
   const p = writeDiff(root, diff);
-  const r = await git(root, ['apply', '--numstat', p]);
+  const r = await git(root, ['apply', '--recount', '--numstat', p]);
   if (r.exitCode !== 0) return [];
   return r.stdout
     .split('\n')
@@ -52,20 +54,20 @@ export async function diffFiles(root: string, diff: string): Promise<string[]> {
 
 export async function applyCheck(root: string, diff: string): Promise<{ ok: boolean; error: string }> {
   const p = writeDiff(root, diff);
-  const r = await git(root, ['apply', '--check', p]);
+  const r = await git(root, ['apply', '--recount', '--check', p]);
   return { ok: r.exitCode === 0, error: r.stderr.trim() };
 }
 
 export async function apply(root: string, diff: string): Promise<void> {
   const p = writeDiff(root, diff);
-  const r = await git(root, ['apply', p]);
+  const r = await git(root, ['apply', '--recount', p]);
   if (r.exitCode !== 0) throw new Error(`git apply failed: ${r.stderr}`);
 }
 
 /** Undo an applied diff (handles new files too), then restore tracked files from HEAD. */
 export async function unapply(root: string, diff: string, files: string[]): Promise<void> {
   const p = writeDiff(root, diff);
-  await git(root, ['apply', '-R', p]);
+  await git(root, ['apply', '--recount', '-R', p]);
   await checkoutFiles(root, files);
 }
 

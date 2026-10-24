@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import { evaluate as evaluateVerdicts, judgeLeak, patchMayCommit, selfCheckPassed, denialMarkers, memberFor, type VerdictInput } from '../src/verdict.ts';
 import { PREPARED_SCENARIOS as SC } from '../src/prepared.ts';
 import type { KaneMember } from '../src/types.ts';
+import { readFileSync } from 'node:fs';
+import { parseTestSteps } from '../src/evidence.ts';
 
 const S2 = SC[1]!;
 const m = (id: string, status: KaneMember['status'], failure?: KaneMember['failure']): KaneMember => ({
@@ -132,4 +134,22 @@ test('a denial that expects the sign-in page ("Sign in") is not mistaken for a s
   // step_index base is not pinned down: a 0-based index at the same denial step must also count
   const zeroBased = judgeLeak(S4, m('S4_signed_out_back_button', 'failed', { ...fail, step_index: 3 }), m('S1_owner_reads_own', 'passed'), { packPresent: true, anyBroken: false, steps });
   assert.equal(zeroBased.verdict, 'leak_confirmed');
+});
+
+test('S5: a failure at the final status check after Bob signs in is the denial; the direct-request step is not', () => {
+  const S5 = {
+    id: 'S5_other_marks_paid', kind: 'leak_check' as const, control_id: 'S1_owner_reads_own',
+    title: 'Another user cannot mark my invoice as paid', requirement: 'r',
+    steps: ['Sign in as Alice', 'Send the mark-as-paid request for invoice 4 directly', 'Sign out', 'Sign in as Bob', 'Open /invoices/4'],
+    expected: ["The page shows 'Status: Unpaid'"],
+  };
+  const steps = parseTestSteps(readFileSync(new URL('../../tests/authz/S5_other_marks_paid_test.md', import.meta.url), 'utf8'));
+  assert.equal(steps.length, 6);
+  assert.deepEqual(denialMarkers(S5), ['Status: Unpaid']);
+  const ctl = m('S1_owner_reads_own', 'passed');
+  const fail = { message: "Final verification failed: the page shows 'Status: Paid'", step_index: 6 };
+  assert.equal(judgeLeak(S5, m('S5_other_marks_paid', 'failed', fail), ctl, { packPresent: true, anyBroken: false, steps }).verdict, 'leak_confirmed');
+  // the direct request itself failing (step 4) says nothing about the owner check
+  const req = judgeLeak(S5, m('S5_other_marks_paid', 'failed', { message: 'request could not be sent', step_index: 4 }), ctl, { packPresent: true, anyBroken: false, steps });
+  assert.equal(req.verdict, 'inconclusive');
 });

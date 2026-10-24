@@ -1,7 +1,7 @@
 {
   "version": 1,
   "app": "Ledger",
-  "generated_at": "2026-10-24T22:59:06.345Z",
+  "generated_at": "2026-10-24T23:44:09.772Z",
   "findings": [
     {
       "scenario": "S2_other_reads_by_url",
@@ -47,20 +47,54 @@
     {
       "scenario": "S3_list_isolation",
       "verdict": "denied_as_expected",
-      "commit": "7a533f5e83d12f080d21c556cc08150ef6e61695",
+      "commit": "bc260a963850c3da9e771074f847a7240a29619d",
       "kane": {
-        "execution_id": "1fac2fc6-35b8-4c92-99bb-e95af88fa683"
+        "execution_id": "b50b6a4b-9374-4290-8447-c9fec36bc321"
       }
     },
     {
       "scenario": "S4_signed_out_back_button",
-      "verdict": "leak_confirmed",
-      "commit": "7a533f5e83d12f080d21c556cc08150ef6e61695",
+      "verdict": "denied_as_expected",
+      "commit": "bc260a963850c3da9e771074f847a7240a29619d",
       "kane": {
-        "execution_id": "1fac2fc6-35b8-4c92-99bb-e95af88fa683",
-        "failed_step": 4,
-        "screenshot": "evidence/1fac2fc6-35b8-4c92-99bb-e95af88fa683/S4/14-screenshot.jpg",
-        "failure_message": "Final verification failed: \"the page shows 'Sign in' and the text 'Client: Initech' is not visible\""
+        "execution_id": "b50b6a4b-9374-4290-8447-c9fec36bc321"
+      }
+    },
+    {
+      "scenario": "S5_other_marks_paid",
+      "verdict": "leak_confirmed",
+      "commit": "e974c59f051b9464ec74f17c5f81257425340c50",
+      "kane": {
+        "execution_id": "c0721a53-4f7d-4817-b342-4d2489eeba7e",
+        "failed_step": 6,
+        "screenshot": "evidence/c0721a53-4f7d-4817-b342-4d2489eeba7e/S5/27-screenshot.jpg",
+        "failure_message": "Final verification failed: \"the invoice status is unchanged from the captured Unpaid baseline and the page shows 'Status: Unpaid'\""
+      },
+      "patch": {
+        "commit": "5c65d5113202421f4eab7ea4dad1c4c57d6fb62c",
+        "files": [
+          "app/src/routes/invoices.ts"
+        ],
+        "diff": "diff --git a/app/src/routes/invoices.ts b/app/src/routes/invoices.ts\n--- a/app/src/routes/invoices.ts\n+++ b/app/src/routes/invoices.ts\n@@ -48,8 +48,7 @@ invoices.get(\"/invoices/:id\", (req, res) => {\n });\n \n invoices.post(\"/invoices/:id/pay\", (req, res) => {\n-  // Also no ownership check (scenario S4).\n-  const info = db.prepare(\"UPDATE invoices SET status = 'Paid' WHERE id = ?\").run(req.params.id);\n+  const info = db.prepare(\"UPDATE invoices SET status = 'Paid' WHERE id = ? AND owner_id = ?\").run(req.params.id, req.session.userId);\n   if (info.changes === 0) return res.status(404).render(\"not-found\");\n   req.session.banner = `Invoice #${req.params.id} marked as paid`;\n   res.redirect(`/invoices/${req.params.id}`);\n",
+        "patcher": "codex",
+        "rationale": "Proposed by codex exec"
+      },
+      "rerun": {
+        "execution_id": "cd29da08-d7a9-46c0-948f-15001b47ae87",
+        "S1": "passed",
+        "S5": "passed"
+      },
+      "verify": {
+        "commit": "5c65d5113202421f4eab7ea4dad1c4c57d6fb62c",
+        "execution_id": "b632d08b-b124-4232-878d-922ac67482e2",
+        "ok": true
+      },
+      "self_check": {
+        "execution_id": "066b01dc-b470-47fb-9226-8186ace8d587",
+        "S5": "failed",
+        "tests_detect_leak": true,
+        "leak_only": false,
+        "evidence_note": "Recorded assertion failed; later RCA classified it as automation_bug/test_data_issue (raw evidence status: broken)."
       }
     }
   ],
@@ -284,6 +318,178 @@
           "screenshot": "evidence/1fac2fc6-35b8-4c92-99bb-e95af88fa683/S4/14-screenshot.jpg"
         }
       ]
+    },
+    {
+      "at": "2026-10-24T23:36:16.712Z",
+      "phase": "scan",
+      "commit": "e974c59f051b9464ec74f17c5f81257425340c50",
+      "execution_id": "c0721a53-4f7d-4817-b342-4d2489eeba7e",
+      "exit_code": 1,
+      "summary": "leak confirmed: S5_other_marks_paid",
+      "outcomes": [
+        {
+          "scenario": "S1_owner_reads_own",
+          "kind": "control",
+          "status": "passed",
+          "verdict": "control_passed",
+          "reason": "passed"
+        },
+        {
+          "scenario": "S5_other_marks_paid",
+          "kind": "leak_check",
+          "status": "failed",
+          "verdict": "leak_confirmed",
+          "reason": "failed at step 6 (denial); control passed",
+          "failed_step": 6,
+          "failure_message": "Final verification failed: \"the invoice status is unchanged from the captured Unpaid baseline and the page shows 'Status: Unpaid'\"",
+          "screenshot": "evidence/c0721a53-4f7d-4817-b342-4d2489eeba7e/S5/27-screenshot.jpg"
+        }
+      ]
+    },
+    {
+      "at": "2026-10-24T23:38:32.899Z",
+      "phase": "patch",
+      "commit": "5c65d5113202421f4eab7ea4dad1c4c57d6fb62c",
+      "execution_id": "cd29da08-d7a9-46c0-948f-15001b47ae87",
+      "exit_code": 0,
+      "summary": "green; committed 5c65d51",
+      "outcomes": [
+        {
+          "scenario": "S1_owner_reads_own",
+          "kind": "control",
+          "status": "passed",
+          "verdict": "control_passed",
+          "reason": "passed"
+        },
+        {
+          "scenario": "S5_other_marks_paid",
+          "kind": "leak_check",
+          "status": "passed",
+          "verdict": "denied_as_expected",
+          "reason": "denied, and the owner control passed"
+        }
+      ]
+    },
+    {
+      "at": "2026-10-24T23:39:01.351Z",
+      "phase": "verify",
+      "commit": "5c65d5113202421f4eab7ea4dad1c4c57d6fb62c",
+      "execution_id": "b632d08b-b124-4232-878d-922ac67482e2",
+      "exit_code": 0,
+      "summary": "fix re-verified on 5c65d51",
+      "outcomes": [
+        {
+          "scenario": "S1_owner_reads_own",
+          "kind": "control",
+          "status": "passed",
+          "verdict": "control_passed",
+          "reason": "passed"
+        },
+        {
+          "scenario": "S5_other_marks_paid",
+          "kind": "leak_check",
+          "status": "passed",
+          "verdict": "denied_as_expected",
+          "reason": "denied, and the owner control passed"
+        }
+      ]
+    },
+    {
+      "at": "2026-10-24T23:40:04.796Z",
+      "phase": "self-check",
+      "commit": "78fa5a9e373a87ae0467f1ccf50ee4e180c083df",
+      "execution_id": "ddb72dd6-0b8e-456e-b0d9-15b8b405b07e",
+      "exit_code": 1,
+      "summary": "patch 5c65d51 reverted; S5 failed; tests did NOT detect the leak",
+      "outcomes": [
+        {
+          "scenario": "S1_owner_reads_own",
+          "kind": "control",
+          "status": "passed",
+          "verdict": "control_passed",
+          "reason": "passed"
+        },
+        {
+          "scenario": "S5_other_marks_paid",
+          "kind": "leak_check",
+          "status": "failed",
+          "verdict": "inconclusive",
+          "reason": "evidence status for S5_other_marks_paid does not match the Kane result"
+        }
+      ]
+    },
+    {
+      "at": "2026-10-24T23:42:22.465Z",
+      "phase": "self-check",
+      "commit": "c5e14111bdea0239ca766b8357305dd5b3e53bf6",
+      "execution_id": "066b01dc-b470-47fb-9226-8186ace8d587",
+      "exit_code": 1,
+      "summary": "patch 5c65d51 reverted; S5 failed; tests detect the leak",
+      "outcomes": [
+        {
+          "scenario": "S1_owner_reads_own",
+          "kind": "control",
+          "status": "passed",
+          "verdict": "control_passed",
+          "reason": "passed"
+        },
+        {
+          "scenario": "S5_other_marks_paid",
+          "kind": "leak_check",
+          "status": "failed",
+          "verdict": "leak_confirmed",
+          "reason": "failed at step 6 (denial); control passed",
+          "evidence_note": "Recorded assertion failed; later RCA classified it as automation_bug/test_data_issue (raw evidence status: broken).",
+          "failed_step": 6,
+          "failure_message": "assertion_failed: @ step 5",
+          "screenshot": "evidence/066b01dc-b470-47fb-9226-8186ace8d587/S5/26-screenshot.jpg"
+        }
+      ]
+    },
+    {
+      "at": "2026-10-24T23:44:09.772Z",
+      "phase": "scan",
+      "commit": "bc260a963850c3da9e771074f847a7240a29619d",
+      "execution_id": "b50b6a4b-9374-4290-8447-c9fec36bc321",
+      "exit_code": 0,
+      "summary": "S1 control_passed, S2 denied_as_expected, S3 denied_as_expected, S4 denied_as_expected, S5 denied_as_expected",
+      "outcomes": [
+        {
+          "scenario": "S1_owner_reads_own",
+          "kind": "control",
+          "status": "passed",
+          "verdict": "control_passed",
+          "reason": "passed"
+        },
+        {
+          "scenario": "S2_other_reads_by_url",
+          "kind": "leak_check",
+          "status": "passed",
+          "verdict": "denied_as_expected",
+          "reason": "denied, and the owner control passed"
+        },
+        {
+          "scenario": "S3_list_isolation",
+          "kind": "leak_check",
+          "status": "passed",
+          "verdict": "denied_as_expected",
+          "reason": "denied, and the owner control passed"
+        },
+        {
+          "scenario": "S4_signed_out_back_button",
+          "kind": "leak_check",
+          "status": "passed",
+          "verdict": "denied_as_expected",
+          "reason": "denied, and the owner control passed"
+        },
+        {
+          "scenario": "S5_other_marks_paid",
+          "kind": "leak_check",
+          "status": "passed",
+          "verdict": "denied_as_expected",
+          "reason": "denied, and the owner control passed"
+        }
+      ]
     }
   ],
   "scenarios": [
@@ -354,11 +560,28 @@
         "The page shows 'Sign in'",
         "The text 'Client: Initech' is not visible"
       ]
+    },
+    {
+      "id": "S5_other_marks_paid",
+      "kind": "leak_check",
+      "control_id": "S1_owner_reads_own",
+      "title": "Another user cannot mark my invoice as paid by sending the request directly",
+      "requirement": "A signed-in user must not be able to change an invoice owned by another user, even by sending the change request directly instead of using the invoice page; the owner's invoice keeps its status.",
+      "steps": [
+        "Sign in as Alice.",
+        "While signed in as Alice, send the mark-as-paid request for invoice 4 directly (POST /invoices/4/pay) from Alice's browser session, without opening invoice 4's page.",
+        "Sign out.",
+        "Sign in as Bob.",
+        "Open /invoices/4 and confirm the page shows Status: Unpaid."
+      ],
+      "expected": [
+        "The page shows 'Status: Unpaid'"
+      ]
     }
   ],
   "scan": {
-    "commit": "7a533f5e83d12f080d21c556cc08150ef6e61695",
-    "execution_id": "1fac2fc6-35b8-4c92-99bb-e95af88fa683",
+    "commit": "bc260a963850c3da9e771074f847a7240a29619d",
+    "execution_id": "b50b6a4b-9374-4290-8447-c9fec36bc321",
     "used_prepared_tests": false,
     "outcomes": [
       {
@@ -385,12 +608,16 @@
       {
         "scenario": "S4_signed_out_back_button",
         "kind": "leak_check",
-        "status": "failed",
-        "verdict": "leak_confirmed",
-        "reason": "failed at step 4 (denial); control passed",
-        "failed_step": 4,
-        "failure_message": "Final verification failed: \"the page shows 'Sign in' and the text 'Client: Initech' is not visible\"",
-        "screenshot": "evidence/1fac2fc6-35b8-4c92-99bb-e95af88fa683/S4/14-screenshot.jpg"
+        "status": "passed",
+        "verdict": "denied_as_expected",
+        "reason": "denied, and the owner control passed"
+      },
+      {
+        "scenario": "S5_other_marks_paid",
+        "kind": "leak_check",
+        "status": "passed",
+        "verdict": "denied_as_expected",
+        "reason": "denied, and the owner control passed"
       }
     ]
   }
