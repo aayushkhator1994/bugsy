@@ -1,0 +1,29 @@
+# secrets — never commit
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# deps / build
+node_modules/
+dist/
+*.log
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+
+# Kane CLI local state and FULL evidence packs: never committed (packs hold HAR/console logs
+# with cookies and test passwords). Full packs go to the hub via `kanehack report --evidence`
+# or the Proof tab. The redacted export lives in evidence/<exec_id>/ and IS committed.
+.testmuai/
+*.evidence
+*.har
+
+# OpenAI raw call dumps; redacted logs in bugsy/.calls/ are committed
+bugsy/.calls/raw/
+
+# hack-gtm render output (video pipeline downloads a headless Chrome here)
+launch/remotion/node_modules/

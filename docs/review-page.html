@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bugsy Build Review</title>
+<style>
+  :root {
+    --bg: #fafaf7; --fg: #1a1a1a; --muted: #5c5c57; --line: #e2e2dc; --card: #ffffff;
+    --accent: #0f7b6c; --warn: #b4530a; --code: #f1f1ec; --codefg: #1a1a1a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #101211; --fg: #ecece6; --muted: #a3a39c; --line: #2a2d2b; --card: #171a18;
+      --accent: #5fd0bb; --warn: #f0a35c; --code: #1e221f; --codefg: #e6e6df;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #101211; --fg: #ecece6; --muted: #a3a39c; --line: #2a2d2b; --card: #171a18;
+    --accent: #5fd0bb; --warn: #f0a35c; --code: #1e221f; --codefg: #e6e6df;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  main { max-width: 960px; margin: 0 auto; padding: 32px 16px 80px; }
+  h1 { font-size: 30px; margin: 0 0 6px; letter-spacing: -0.01em; }
+  .sub { color: var(--muted); margin: 0 0 28px; }
+  h2 { font-size: 20px; margin: 44px 0 10px; padding-top: 18px; border-top: 1px solid var(--line); }
+  h3 { font-size: 16px; margin: 22px 0 6px; }
+  p { margin: 8px 0; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; margin: 12px 0; }
+  .mermaid { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px; margin: 12px 0; overflow-x: auto; }
+  code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13.5px; }
+  code { background: var(--code); color: var(--codefg); padding: 1px 5px; border-radius: 4px; }
+  pre { background: var(--code); color: var(--codefg); padding: 12px 14px; border-radius: 8px; overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 14.5px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .tag { display: inline-block; font-size: 12px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); margin-right: 6px; }
+  .ok { color: var(--accent); font-weight: 600; }
+  .warn { color: var(--warn); font-weight: 600; }
+  ul { padding-left: 20px; } li { margin: 4px 0; }
+  a { color: var(--accent); }
+  .toc a { margin-right: 14px; white-space: nowrap; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Bugsy, build review</h1>
+  <p class="sub">Kane CLI Hack Day SF, 24 Oct 2026. Everything here mirrors the files in the repo; this page just renders the diagrams. Source of truth: <code>BUGSY_SPEC.md</code>.</p>
+  <p class="toc">
+    <a href="#idea">Idea</a><a href="#pieces">Pieces</a><a href="#experiment">One experiment</a><a href="#verdict">Verdicts</a><a href="#fix">Fix loop</a><a href="#hub">Hub counters</a><a href="#day">The day</a><a href="#decide">Decide</a>
+  </p>
+
+  <h2 id="idea">1. The idea</h2>
+  <p>Mutation testing: break the app on purpose in one small way, run the tests, see if anything fails. If nothing fails, the tests are blind to that bug. Bugsy does this on AI-written Kane CLI browser tests, then closes each gap with a test Kane designs from the requirement that was never written.</p>
+  <div class="mermaid">
+flowchart TB
+  subgraph before["What everyone has today"]
+    A1[AI writes the app] --> A2[AI writes the tests] --> A3[Tests pass] --> A4["All green. Would they fail if something broke?"]
+  end
+  subgraph bugsy["What Bugsy adds"]
+    B1[Plant one realistic bug] --> B2[Run the same tests] --> B3{Did any test fail?}
+    B3 -->|yes| B4[Caught]
+    B3 -->|no| B5[Survived: the suite is blind to this bug]
+    B5 --> B6[Name the missing requirement, design the test, prove it]
+  end
+  A4 --> B1
+  </div>
+
+  <h2 id="pieces">2. The pieces</h2>
+  <div class="mermaid">
+flowchart LR
+  subgraph you["Your terminal"]
+    CLI["bugsy<br/>run · probe · fix · report"]
+  end
+  subgraph app["Ledger (app under test)"]
+    L["Express + SQLite, port 3000"]
+    SW{{"BUG env var<br/>none / leak_cross_tenant /<br/>pay_no_persist / total_off_by_one"}}
+    H["/health says which bug is live"]
+  end
+  subgraph kane["Kane CLI 0.10.0"]
+    T["testrun run<br/>runs tests/*_test.md in real Chrome"]
+    DZ["context ingest, design tests<br/>requirement to test"]
+    EV[("evidence pack<br/>per-test status, failures, screenshots")]
+  end
+  subgraph oai["OpenAI (Responses API)"]
+    G["gap analysis:<br/>which requirement was never written?"]
+  end
+  subgraph hub["Hack hub"]
+    KR["kanehack report<br/>verified passes, suspected defects, fixes re-verified"]
+  end
+  CLI -->|"start with BUG=…"| L
+  CLI -->|run suite| T
+  T --> EV
+  CLI -->|read verdicts| EV
+  CLI -->|survivor| G
+  G -->|requirement addendum| DZ
+  DZ -->|new _test.md| CLI
+  T -.->|every run wrapped| KR
+  </div>
+  <div class="card">
+    <table>
+      <tr><th>Layer</th><th>Choice</th><th>Why</th></tr>
+      <tr><td>Runtime</td><td>TypeScript on Node 20 via <code>tsx</code></td><td>No build step, one toolchain</td></tr>
+      <tr><td>Demo app</td><td>Express + EJS + better-sqlite3 (in memory) + express-session</td><td>Server-rendered, stable text, reseeds on every boot</td></tr>
+      <tr><td>CLI</td><td>commander, execa, yaml, adm-zip, zod</td><td>Small and boring</td></tr>
+      <tr><td>Grader</td><td>Kane CLI: testrun, assurance flow, evidence packs</td><td>The event's tool, and the verdict source</td></tr>
+      <tr><td>LLM</td><td>OpenAI Responses API, strict JSON schema, <code>OPENAI_MODEL</code> from .env</td><td>The gate; structured output keeps it predictable</td></tr>
+      <tr><td>Report</td><td>bugsy.report.json + self-contained report.html</td><td>Opens from disk at the judges' table</td></tr>
+    </table>
+  </div>
+
+  <h2 id="experiment">3. One experiment</h2>
+  <div class="mermaid">
+sequenceDiagram
+  participant B as bugsy run
+  participant A as Ledger
+  participant P as probe (HTTP)
+  participant K as Kane CLI
+  participant E as evidence pack
+  B->>A: start BUG=none
+  B->>K: run suite (baseline)
+  K-->>E: all passed
+  B->>A: stop, restart BUG=leak_cross_tenant
+  B->>P: as Alice, GET /invoices/4
+  P-->>B: 200 and the page contains "Umbrella" (bug is live)
+  B->>K: run the same suite, healing off
+  K-->>E: all passed
+  B->>E: read per-test status
+  B-->>B: verdict = survived (green on a leaking app)
+  </div>
+  <p>The probe proves the bug is really there before a Kane run is spent. Mutants run one at a time; the app restarts with fresh data before each, so tests never share state.</p>
+
+  <h2 id="verdict">4. How a verdict is decided</h2>
+  <div class="mermaid">
+flowchart TD
+  S([Kane run finished]) --> Q1{Probe showed the bug is live?}
+  Q1 -->|no| INV[invalid]
+  Q1 -->|yes| Q2{Any test broken or interrupted?}
+  Q2 -->|yes| INC[inconclusive]
+  Q2 -->|no| Q3{Any test failed?}
+  Q3 -->|no| SUR[survived]
+  Q3 -->|yes| Q4{Failed after step 1, i.e. after reaching the app?}
+  Q4 -->|no| INC
+  Q4 -->|yes| Q5{Same test passed on the clean baseline?}
+  Q5 -->|no| INC
+  Q5 -->|yes| CAU[caught]
+  </div>
+  <div class="card">
+    <p><b>Catch rate</b> = caught ÷ (caught + survived), over valid and conclusive experiments only. The report always shows inconclusive and invalid counts beside it. Verdicts come from Kane's per-test <code>status</code> and failing step in the evidence pack, never from the exit code alone.</p>
+  </div>
+
+  <h2 id="fix">5. The fix loop</h2>
+  <div class="mermaid">
+sequenceDiagram
+  participant U as You
+  participant B as bugsy fix
+  participant O as OpenAI
+  participant K as Kane CLI
+  participant A as Ledger
+  participant H as Hack hub
+  U->>B: bugsy fix leak_cross_tenant
+  B->>O: mutant + PRD + tests + evidence
+  O-->>B: "A user must not view another user's invoice"
+  B->>B: write requirements/addendum-leak_cross_tenant.md
+  B->>K: context ingest, review, design tests --max 1
+  K-->>B: tests/tenant_isolation_test.md
+  B->>A: start BUG=none
+  B->>K: run the new test (authors and records it)
+  K-->>H: passed, verified pass
+  B->>A: restart BUG=leak_cross_tenant
+  B->>K: run the new test
+  K-->>H: failed at "Invoice not found", suspected defect
+  B->>B: commit addendum + test + recordings
+  B->>A: restart BUG=none
+  B->>K: run the suite at the new commit
+  K-->>H: passed, fix re-verified
+  B-->>U: leak_cross_tenant: survived to caught
+  </div>
+  <div class="card">
+    <p><b>Two rules.</b> The new test is always authored on the clean app (authoring it on the mutant would record the leak as normal). The requirement must be general, never "invoice #4", so Kane designs a test of the rule, not the seeded row.</p>
+    <p><b>Fallback.</b> If Kane's design step pauses twice or passes 3 minutes live, Bugsy prints <code>USING PREPARED TEST</code> and uses the one generated in the morning. Said out loud, never hidden.</p>
+  </div>
+
+  <h2 id="hub">6. What the judges' Proof tab counts</h2>
+  <div class="card">
+    <table>
+      <tr><th>Bugsy event</th><th>Kane exit</th><th>Hub counter</th></tr>
+      <tr><td>Baseline on clean app</td><td>0</td><td class="ok">verified pass</td></tr>
+      <tr><td>Mutant survived</td><td>0</td><td class="ok">verified pass, on a leaking app (we say so in the demo)</td></tr>
+      <tr><td>Mutant caught</td><td>1</td><td class="warn">suspected defect, confirmed by us as "planted"</td></tr>
+      <tr><td>New test red on mutant</td><td>1</td><td class="warn">suspected defect</td></tr>
+      <tr><td>Suite green at the new commit after fix</td><td>0</td><td class="ok">fix re-verified</td></tr>
+      <tr><td>A real Ledger bug found by the first run</td><td>1 then 0</td><td>suspected defect, then re-verified. Reported, not hidden.</td></tr>
+    </table>
+    <p>Every Kane command runs through <code>kanehack report -- kane-cli …</code>. Exit code decides, a run with no completion event never counts as a pass, and the tree should be committed before runs that matter. Full evidence packs go to the hub, never the public repo; the repo carries redacted exports.</p>
+  </div>
+
+  <h2 id="day">7. The day</h2>
+  <div class="mermaid">
+gantt
+  title Pacific time
+  dateFormat HH:mm
+  axisFormat %H:%M
+  section Gates
+  Idea locked            :milestone, 12:00, 0m
+  Mid-eval               :milestone, 14:00, 0m
+  Scored eval at table   :crit, 16:00, 60m
+  Submissions lock       :milestone, 18:00, 0m
+  section Build
+  C0 setup, pair, model, app up   :11:00, 30m
+  C1 first real Kane run, measure :11:30, 45m
+  Ledger app + mutants            :11:15, 105m
+  bugsy run + verdicts + report   :11:30, 150m
+  C2 first survived verdict       :milestone, 13:00, 0m
+  bugsy fix                       :13:00, 90m
+  C3 fix loop end to end          :milestone, 14:30, 0m
+  Full matrix, README, exports    :14:30, 60m
+  Dry run x2, hub housekeeping    :15:30, 30m
+  section Launch
+  Video, posts, blog, deck        :17:00, 60m
+  </div>
+  <div class="card">
+    <table>
+      <tr><th>Checkpoint</th><th>Go</th><th>No-go fallback</th></tr>
+      <tr><td><b>C1</b> one real Kane run on the clean app, measure credits and time</td><td>≤ 4 min and ≤ 2,000 credits per authored test</td><td>2 mutants, 3 tests, no opt-ins</td></tr>
+      <tr><td><b>C2</b> first survived verdict read from the pack</td><td>build fix</td><td>fix the verdict engine first; it is the product</td></tr>
+      <tr><td><b>C3</b> fix loop end to end, timed</td><td>≤ 3 min, live at 16:00</td><td>prepared test at 16:00, said aloud</td></tr>
+    </table>
+  </div>
+
+  <h2 id="decide">8. What you decide now</h2>
+  <div class="card">
+    <ul>
+      <li><span class="tag">scope</span> Default matrix is 3 mutants (leak, pay-no-persist, total-off-by-one). Two more are opt-in.</li>
+      <li><span class="tag">credits</span> Only you run Kane against credits. Agents build against recorded output from C1.</li>
+      <li><span class="tag">model</span> Pick <code>OPENAI_MODEL</code> from what your key lists; it goes in <code>.env</code>.</li>
+      <li><span class="tag">honesty</span> The PRD omits tenant isolation on purpose, and we say so. No predicted score in public text.</li>
+      <li><span class="tag">setup</span> In your own terminal: the hub installer, <code>kanehack pair</code>, <code>kanehack consent yes</code>.</li>
+    </ul>
+  </div>
+
+  <p class="sub" style="margin-top:40px">Files: <code>BUGSY_SPEC.md</code> · <code>requirements/ledger-prd.md</code> · <code>docs/how-it-works.md</code> · <code>docs/demo-script.md</code> · <code>docs/launch-brief.md</code> · <code>docs/posts.md</code></p>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js"></script>
+<script>
+  (function () {
+    var dark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    var forced = document.documentElement.getAttribute('data-theme');
+    if (forced === 'dark') dark = true; if (forced === 'light') dark = false;
+    mermaid.initialize({ startOnLoad: true, theme: dark ? 'dark' : 'neutral', securityLevel: 'loose', fontFamily: 'inherit' });
+  })();
+</script>
+</body>
+</html>
