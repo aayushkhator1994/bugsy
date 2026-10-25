@@ -34,3 +34,6 @@ bugsy/.run/
 
 # parked git backups
 .git-old-*/
+
+# per-run OpenAI/Jev call logs (redacted); kept local so self-check sees a clean tree
+bugsy/.calls/*.json

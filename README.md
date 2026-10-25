@@ -10,6 +10,9 @@ Bugsy checks whether one user can see or change another user's data, fixes it if
 
 Built with OpenAI, tested with Kane CLI, at Kane CLI Hack Day SF, 24 Oct 2026. `#KaneCLIHackDay`
 
+> [!IMPORTANT]
+> **This branch is the app *before* Bugsy, and it has the bugs on purpose.** In the demo app, Alice can open Bob's invoice (S2) and mark it as paid (S5). Run Bugsy (below) and it finds both, fixes them, and writes the proof to `report/`. The earlier build-day run, with all its evidence, is kept on the branch [`archive/run-2026-10-24`](https://github.com/aayushkhator1994/bugsy/tree/archive/run-2026-10-24).
+
 ## Why
 
 Coding agents ship apps from short specs. If the spec never says "a user must not see another user's data", the agent never writes the check and never tests it. Everything is green, and Alice can type `/invoices/4` to read Bob's invoice.
@@ -51,14 +54,7 @@ npm test                        # 64 unit tests, no network
 set -a; source .env; set +a
 ```
 
-`main` already contains the fixes. To see Bugsy find and fix the leaks, start from the app as it was first shipped:
-
-```bash
-git checkout -b try-bugsy
-git revert --no-commit 4eabdca 16216a9 && git commit -m "the app before Bugsy"
-```
-
-Then:
+Then run the loop. Each step prints what it found; Bugsy commits each fix it makes.
 
 ```bash
 npx bugsy scan --scenarios-only                        # OpenAI writes the plan; code + Jev check it
@@ -67,7 +63,7 @@ npx bugsy --only S2 patch S2_other_reads_by_url        # Codex fixes it; Kane re
 npx bugsy --only S5 patch S5_other_marks_paid
 npx bugsy self-check S2_other_reads_by_url             # revert, rerun → red, restore
 npx bugsy self-check S5_other_marks_paid
-open report.html
+open report/report.html                                # leaks, screenshots, fixes, proof
 ```
 
 Drop `--skip-design` to have Kane design fresh tests from the plan (slower, more Kane credits). `--only` runs just those scenarios plus their owner control. `--no-report` skips sending run summaries to the hack hub.
@@ -76,7 +72,9 @@ To look at the app yourself: `npm run app`, open http://localhost:3100, sign in 
 
 ## Findings
 
-All from real Kane runs; ids are Kane execution ids, exports are in `evidence/`.
+**Your run:** everything lands in `report/`: `report/report.html` (open it), `report/bugsy.report.json`, and redacted Kane evidence in `report/evidence/`.
+
+**The build-day run** (archived on [`archive/run-2026-10-24`](https://github.com/aayushkhator1994/bugsy/tree/archive/run-2026-10-24), evidence in its `evidence/` folder):
 
 ![Kane CLI's screenshot from the first S2 run: Alice's browser showing Bob's $4,000 invoice](docs/assets/alice-sees-bobs-invoice-kane.jpg)
 
@@ -86,7 +84,7 @@ All from real Kane runs; ids are Kane execution ids, exports are in `evidence/`.
 | **S5** change by request | Alice marks Bob's invoice as paid with a direct request; Bob sees "Paid" | `c0721a53-4f7d-4817-b342-4d2489eeba7e` | `b632d08b-b124-4232-878d-922ac67482e2` (fix `4eabdca`) | `066b01dc-b470-47fb-9226-8186ace8d587` |
 | **S4** signed out, still visible | After sign-out, Back shows Alice's invoice from the browser cache | `1fac2fc6-35b8-4c92-99bb-e95af88fa683` | fix `ab5cc15` (`Cache-Control: no-store`, cookie cleared) | not proven; see limitations |
 
-Final run of all five scenarios on the fixed app: `b50b6a4b-9374-4290-8447-c9fec36bc321`, all passed. Details and credit costs: [docs/e2e-results.md](docs/e2e-results.md).
+Final run of all five scenarios on the fixed app: `b50b6a4b-9374-4290-8447-c9fec36bc321`, all passed. Details and credit costs: [docs/e2e-results.md on the archive branch](https://github.com/aayushkhator1994/bugsy/blob/archive/run-2026-10-24/docs/e2e-results.md).
 
 Plan check, two live runs (OpenAI writes the plan, Jev scores it):
 ```
@@ -101,12 +99,11 @@ Plan check ▸ read_by_url S2 ✔ (Jev 0.97) · list S3 ✔ (0.99) · change S5 
 | `app/` | Ledger, styled as the Satrang Sarees customer account area (Express, EJS, SQLite in memory). The demo bugs were seeded on purpose and we say so. |
 | `bugsy.config.json` | The only thing a user writes: app URL, two test accounts, the ownership rule, and which checks must be covered. |
 | `requirements/ledger-prd.md` | The spec Ledger was built from. It never says who may see what. |
-| `requirements/authz-scenarios.md` | The plan OpenAI generated from the rule, which the saved tests were designed from. |
+| `requirements/authz-scenarios.md` | Not in the repo until you run Bugsy: `bugsy scan --scenarios-only` writes the plan here. The saved tests were designed from the build-day plan (on the archive branch). |
 | `tests/authz/` | Kane `_test.md` files with their replay recordings. |
 | `bugsy/` | The CLI (`scan`, `patch`, `self-check`, `report`) and its unit tests. |
-| `evidence/` | Redacted Kane evidence: results, failure records, screenshots. No network or console logs. Full sealed packs are on the hack hub, never in this repo. |
-| `bugsy.report.json`, `report.html` | The latest findings with diffs and run ids. |
-| `docs/` | How it works, demo script, end-to-end runbook and results, launch drafts. `docs/archive/` holds superseded plans. |
+| `report/` | Created by a run: the findings page, the report JSON, and redacted Kane evidence (results, failure records, screenshots; no network or console logs). Full sealed packs are on the hack hub, never in this repo. |
+| `docs/` | How it works, demo script, end-to-end runbook, launch drafts. `docs/archive/` holds superseded plans. |
 
 ## Known limitations
 
