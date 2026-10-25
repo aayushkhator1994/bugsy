@@ -4,7 +4,9 @@
 
 **A security seatbelt for vibe-coded apps.**
 
-You write one sentence about who owns what. OpenAI turns it into browser scenarios, each paired with an owner control. Kane CLI runs them in a real browser as two different users and reproduces the leak. Codex patches the server. Kane reruns the same scenarios to prove the fix. Then Bugsy reverts the patch and reruns, to prove the test would catch the leak again.
+Bugsy checks whether one user can see or change another user's data, fixes it if they can, and proves the fix.
+
+![Write the rule, Kane finds the leak, Codex fixes the code, Bugsy proves it](docs/assets/bugsy-flow.svg)
 
 Built with OpenAI, tested with Kane CLI, at Kane CLI Hack Day SF, 24 Oct 2026. `#KaneCLIHackDay`
 
