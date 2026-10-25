@@ -2,7 +2,7 @@
 
 > **Bugsy is a security seatbelt for vibe-coded apps.** You give it an app, two test accounts and one sentence about who owns what. OpenAI turns that into authorization scenarios, Kane CLI reproduces the cross-user leak in a real browser, Codex patches the ownership check, Kane reruns the same scenarios to prove the fix, and then Bugsy reverts the patch to prove the tests would catch the leak again.
 
-Status: v2 adopts `docs/change-recommendations.md` (the pivot from mutation testing to the two-account security story), with three additions that carry the originality points (§2). v1 (mutation matrix) is kept as the closing self-check, not the product. Everything after §0 is the build contract; the coding-agent handoff is §16.
+Status: v2 adopts `docs/archive/change-recommendations.md` (the pivot from mutation testing to the two-account security story), with three additions that carry the originality points (§2). v1 (mutation matrix) is kept as the closing self-check, not the product. Everything after §0 is the build contract; the coding-agent handoff is §16.
 
 ---
 
