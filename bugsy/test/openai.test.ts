@@ -10,6 +10,7 @@ import { codexArgs } from '../src/openai/patch.ts';
 const mk = (id: string, kind: string, control_id: string | null) => ({
   id, kind, control_id, title: id, requirement: 'A user sees only their own invoices.',
   steps: ['Sign in as Alice'], expected: ['The page shows Client: Initech'],
+  checks: kind === 'control' ? ['control'] : id.startsWith('S2') ? ['read_by_url'] : ['list'],
 });
 const good = JSON.stringify({ scenarios: [
   mk('S1_owner_reads_own', 'control', null),

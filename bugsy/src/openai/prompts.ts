@@ -1,4 +1,5 @@
-import type { BugsyConfig, KaneFailure, Scenario } from '../types.ts';
+import { MUST_CHECK_KINDS, type BugsyConfig, type KaneFailure, type MustCheckKind, type Scenario } from '../types.ts';
+import { KIND_SCENARIO_ID } from './schema.ts';
 
 export interface FixtureInvoice { id: number; owner: string; client: string; amount: string; status?: string }
 
@@ -19,18 +20,32 @@ export function summarizeAccounts(config: BugsyConfig) {
   }));
 }
 
-export const SCENARIO_SYSTEM = `You design authorization test scenarios for a web app, to be executed by a browser agent that follows human-readable steps.
+const KIND_RULES: Record<MustCheckKind, string> = {
+  read_by_url: `- S2_other_reads_by_url (checks ["read_by_url"]): Bob opens his invoice (/invoices/4) and confirms Client: Umbrella, signs out, Alice signs in and opens the same URL, and must see 'Invoice not found' with no Umbrella and no $4,000.00.`,
+  list: `- S3_list_isolation (checks ["list"]): Alice's invoice list must not contain Bob's invoices (no Umbrella, no $4,000.00, no link to invoice 4).`,
+  signed_out: `- S4_signed_out_back_button (checks ["signed_out"]): After a user signs out, pressing the browser Back button must not show any page from their account; the sign-in page is shown instead. Steps exactly: Sign in as Alice; Open /invoices/3 and confirm it shows Client: Initech; Click Sign out; Press the browser Back button. Expected: "The page shows 'Sign in'" and "The text 'Client: Initech' is not visible".`,
+  change: `- S5_other_marks_paid (checks ["change"]): A signed-in user must not be able to change an invoice owned by another user, even by sending the change request directly instead of using the invoice page; the owner's invoice keeps its status. Steps exactly: Sign in as Alice.; While signed in as Alice, send the mark-as-paid request for invoice 4 directly (POST /invoices/4/pay) from Alice's browser session, with her session cookie, without opening invoice 4's page.; Sign out.; Sign in as Bob.; Open /invoices/4 and confirm the page shows Status: Unpaid. Expected: "The page shows 'Status: Unpaid'". This one step may name the request and the session cookie; the other steps follow the rules above.`,
+};
+const KIND_ORDER: MustCheckKind[] = ['read_by_url', 'list', 'signed_out', 'change'];
+
+/** System prompt for scenario generation; lists exactly which must_check kinds to cover. */
+export function buildScenarioSystem(mustCheck: readonly MustCheckKind[] = MUST_CHECK_KINDS): string {
+  const kinds = KIND_ORDER.filter((k) => mustCheck.includes(k));
+  const ids = ['S1_owner_reads_own (kind control, checks ["control"])', ...kinds.map((k) => `${KIND_SCENARIO_ID[k]} (kind leak_check, control_id S1_owner_reads_own, checks ["${k}"])`)];
+  return `You design authorization test scenarios for a web app, to be executed by a browser agent that follows human-readable steps.
 Rules:
-- Produce exactly these scenarios, in this order: S1_owner_reads_own (kind control), S2_other_reads_by_url (kind leak_check, control_id S1_owner_reads_own), S3_list_isolation (kind leak_check, control_id S1_owner_reads_own). Optionally add S4_signed_out_back_button and S5_other_marks_paid (each kind leak_check, control_id S1_owner_reads_own).
-- Every leak_check names its control in control_id. The control scenario has control_id null.
+- Required checks for this plan (must_check): ${kinds.join(', ')}. Produce exactly one leak_check per required check, plus the control, with these stable ids, in this order: ${ids.join('; ')}.
+- "checks" lists what the scenario tests: ["control"] for S1, and for each leak_check exactly the one required check it covers.
+- Every leak_check names its control in control_id (S1_owner_reads_own). The control scenario has control_id null.
 - "requirement" is a general rule in one sentence. Never mention a specific invoice number in the requirement sentence.
-- "steps" are browser actions a person could follow, such as: Sign in as Bob, Open /invoices/4 and confirm it shows Client: Umbrella, Sign out, Sign in as Alice, Open /invoices/4. Ids and URLs are fine in steps. No SQL, no HTTP or status-code talk, no cookies, no headers.
-- "expected" texts must be exact strings from the product: "Invoice not found", "Client: Initech", "Client: Umbrella", "$4,000.00". Use only strings that appear in the provided fixture summary or the quoted strings above. For a denial, expect the page shows 'Invoice not found' and that the other user's client name and amount are not on the page.
-- S1: the owner signs in and opens their own invoice and sees its client (for example Alice opens /invoices/3 and sees Client: Initech).
-- S2: Bob opens his invoice (/invoices/4) and confirms Client: Umbrella, signs out, Alice signs in and opens the same URL, and must see 'Invoice not found' with no Umbrella and no $4,000.00.
-- S3: Alice's invoice list must not contain Bob's invoices (no Umbrella, no $4,000.00, no link to invoice 4).
-- S5 (optional): Alice, signed in, sends the mark-as-paid request for Bob's invoice 4 directly (POST /invoices/4/pay) from her browser session without opening that page; she signs out, Bob signs in and opens /invoices/4, which must still show 'Status: Unpaid'. This one step may name the request; the other steps follow the rules above.
+- "steps" are browser actions a person could follow, such as: Sign in as Bob, Open /invoices/4 and confirm it shows Client: Umbrella, Sign out, Sign in as Alice, Open /invoices/4. Ids and URLs are fine in steps. No SQL, no HTTP or status-code talk, no cookies, no headers (except the one S5 step below).
+- "expected" texts must quote exact strings from the product UI: "Invoice not found", "Client: Initech", "Client: Umbrella", "$4,000.00", "Status: Unpaid", "Sign in". Use only strings that appear in the provided fixture summary or the quoted strings above. For a denial, expect the page shows 'Invoice not found' and that the other user's client name and amount are not on the page.
+- S1_owner_reads_own (checks ["control"]): the owner signs in and opens their own invoice and sees its client (for example Alice opens /invoices/3 and sees Client: Initech).
+${kinds.map((k) => KIND_RULES[k]).join('\n')}
 - Passwords are never provided to you and never appear in steps; steps say "Sign in as <name>".`;
+}
+
+export const SCENARIO_SYSTEM = buildScenarioSystem();
 
 export function buildScenarioInput(config: BugsyConfig, fixtures: FixtureInvoice[] = DEFAULT_FIXTURES): string {
   return JSON.stringify(

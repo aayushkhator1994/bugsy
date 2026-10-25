@@ -1,12 +1,13 @@
 // bugsy.report.json (schema §8, history[] kept) and a self-contained report.html (inline CSS, no CDN).
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import type { PlanCheck } from './verify/jev.ts';
 import type { BugsyReport, Finding, HistoryEntry, Scenario, ScenarioOutcome } from './types.ts';
 
 export const REPORT_JSON = 'bugsy.report.json';
 export const REPORT_HTML = 'report.html';
 
-export type StoredReport = BugsyReport & { scenarios?: Scenario[] };
+export type StoredReport = BugsyReport & { scenarios?: Scenario[]; plan_check?: PlanCheck };
 
 export function emptyReport(app = 'Ledger'): StoredReport {
   return { version: 1, app, generated_at: new Date().toISOString(), findings: [], history: [] };
