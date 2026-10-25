@@ -13,7 +13,7 @@
   "ownership_rule": "Each invoice belongs to exactly one user. Alice owns invoices 1-3, Bob owns 4-6. A signed-in user may view and change only their own invoices; any other invoice must show 'Invoice not found'. After signing out, pressing Back must not show any account page.",
   "routes": ["GET /login", "POST /login", "POST /logout", "GET /invoices", "GET /invoices/:id", "POST /invoices/:id/pay", "GET /invoices/new", "POST /invoices"],
   "tests_dir": "tests/authz",
-  "evidence_export_dir": "evidence",
+  "evidence_export_dir": "report/evidence",
   "kanehack_report": true,
   "must_check": ["read_by_url", "list", "change", "signed_out"]
 }

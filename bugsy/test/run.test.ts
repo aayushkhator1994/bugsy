@@ -202,7 +202,7 @@ test('recorded denial assertion confirms leak despite later RCA automation-bug c
   assert.equal(leak.verdict, 'leak_confirmed');
   assert.match(leak.evidence_note!, /later RCA.*automation_bug\/test_data_issue.*raw evidence status: broken/);
   assert.equal(exported!.tests.find((t) => t.name === S2)!.status, 'broken');
-  assert.match(readFileSync(join(f.ctx.root, 'evidence/run/S2/result.yaml'), 'utf8'), /status: broken/);
+  assert.match(readFileSync(join(f.ctx.root, 'report/evidence/run/S2/result.yaml'), 'utf8'), /status: broken/);
   assert.equal(createHash('sha256').update(readFileSync(f.run.pack_path!)).digest('hex'), packHash);
   assert.equal(selfCheckPassed(outcomes, S2), true);
   assert.equal(patchMayCommit(outcomes), false);

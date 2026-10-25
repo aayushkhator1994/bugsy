@@ -31,7 +31,7 @@ export const BugsyConfigSchema = z.object({
   ownership_rule: z.string().min(1),
   routes: z.array(z.string()).min(1),
   tests_dir: z.string().default('tests/authz'),
-  evidence_export_dir: z.string().default('evidence'),
+  evidence_export_dir: z.string().default('report/evidence'),
   kanehack_report: z.boolean().default(true),
   /** Leak-check kinds every generated plan must cover. Default: all four (backward compatible). */
   must_check: z.array(MustCheckKindSchema).default([...MUST_CHECK_KINDS]),

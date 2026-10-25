@@ -47,8 +47,8 @@ test('self-check accepts replay metadata updates, restores the patch, and protec
   const A = (await git('rev-parse', 'HEAD')).stdout;
   writeFileSync(route, 'patched\n'); await git('add', 'app/src/routes/invoices.ts'); await git('commit', '-qm', 'fix(authz): S2_other_reads_by_url');
   const B = (await git('rev-parse', 'HEAD')).stdout;
-  writeFileSync(join(root, 'bugsy.report.json'), JSON.stringify({version:1,app:'Ledger',generated_at:'now',history:[],findings:[{scenario:ids[1],verdict:'leak_confirmed',commit:A,kane:{execution_id:'red'},patch:{commit:B,files:['app/src/routes/invoices.ts'],diff:'',patcher:'test'}}]}));
-  await git('add', 'bugsy.report.json'); await git('commit', '-qm', 'record fix');
+  writeFileSync((mkdirSync(join(root,'report'),{recursive:true}), join(root, 'report/bugsy.report.json')), JSON.stringify({version:1,app:'Ledger',generated_at:'now',history:[],findings:[{scenario:ids[1],verdict:'leak_confirmed',commit:A,kane:{execution_id:'red'},patch:{commit:B,files:['app/src/routes/invoices.ts'],diff:'',patcher:'test'}}]}));
+  await git('add', 'report/bugsy.report.json'); await git('commit', '-qm', 'record fix');
   const socket = createServer(); await new Promise<void>(r=>socket.listen(0,'127.0.0.1',r));
   const port = (socket.address() as {port:number}).port; await new Promise<void>((r,j)=>socket.close(e=>e?j(e):r()));
   const cfg = parseConfig({app:{start:`node '${serverFile}'`,url:`http://localhost:${port}`,source_globs:['app/src/routes/**']},accounts:{alice:{email:'alice@example.test',password:'demo-alice'},bob:{email:'bob@example.test',password:'demo-bob'}},ownership_rule:'Users own their invoices',routes:['GET /invoices/:id']});
@@ -61,7 +61,7 @@ test('self-check accepts replay metadata updates, restores the patch, and protec
     assert.equal(await selfCheck(ctx, undefined), 0);
     assert.equal(readFileSync(route,'utf8'), 'patched\n');
     assert.equal(readFileSync(definition,'utf8'), frozen);
-    assert.equal(JSON.parse(readFileSync(join(root,'bugsy.report.json'),'utf8')).findings[0].self_check.tests_detect_leak, true);
+    assert.equal(JSON.parse(readFileSync(join(root,'report/bugsy.report.json'),'utf8')).findings[0].self_check.tests_detect_leak, true);
     writeFileSync(definition, frozen + '\n# unexpected edit\n');
     await assert.rejects(selfCheck(ctx, undefined), /working tree is not clean/);
     assert.equal(readFileSync(route,'utf8'), 'patched\n');
