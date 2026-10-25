@@ -8,6 +8,7 @@ import { executeRun, judgeRun, scopeScenarios, type Ctx } from '../run.ts';
 import { loadReport, pushHistory, saveReport, upsertFinding, writeHtml } from '../report.ts';
 import { BugsyError } from '../config.ts';
 import type { Scenario, ScenarioOutcome } from '../types.ts';
+import { formatPlanCheck, type PlanCheck } from '../verify/jev.ts';
 
 export const SCENARIOS_MD = 'requirements/authz-scenarios.md';
 
@@ -17,19 +18,24 @@ export interface ScanOptions {
   skipDesign?: boolean;
 }
 
-async function getScenarios(ctx: Ctx, o: ScanOptions): Promise<Scenario[]> {
+async function getScenarios(ctx: Ctx, o: ScanOptions): Promise<{ scenarios: Scenario[]; planCheck?: PlanCheck }> {
   const report = loadReport(ctx.root);
   if (o.usePrepared || o.skipDesign) {
     if (report.scenarios?.length) {
       ctx.log(`  scenarios: reusing ${report.scenarios.length} from bugsy.report.json`);
-      return report.scenarios;
+      return { scenarios: report.scenarios };
     }
     ctx.log('  scenarios: USING PREPARED SCENARIOS (spec §3)');
-    return PREPARED_SCENARIOS;
+    return { scenarios: PREPARED_SCENARIOS };
   }
   ctx.log('  scenarios: generating with OpenAI from the ownership rule…');
   const { generateScenarios } = await import('../openai/index.ts');
-  return generateScenarios(ctx.cfg);
+  const scenarios = await generateScenarios(ctx.cfg); // throws unless the code coverage check passes
+  const { checkCoverage } = await import('../openai/schema.ts');
+  const { runJev } = await import('../verify/jev.ts');
+  const cov = checkCoverage(scenarios, ctx.cfg.must_check);
+  const jev = await runJev(ctx.cfg.ownership_rule, scenarios, ctx.cfg.must_check);
+  return { scenarios, planCheck: { must_check: cov.must_check, covered_by: cov.covered_by, jev } };
 }
 
 async function writeScenariosMd(ctx: Ctx, scenarios: Scenario[]): Promise<string> {
@@ -67,12 +73,14 @@ export function formatOutcome(o: ScenarioOutcome): string {
 }
 
 export async function scan(ctx: Ctx, o: ScanOptions): Promise<number> {
-  const scenarios = await getScenarios(ctx, o);
+  const { scenarios, planCheck } = await getScenarios(ctx, o);
+  if (planCheck) for (const line of formatPlanCheck(planCheck)) (ctx.json ? console.error : console.log)(line);
   const mdPath = await writeScenariosMd(ctx, scenarios);
   ctx.log(`  wrote ${SCENARIOS_MD} (${scenarios.length} scenarios)`);
 
   const report = loadReport(ctx.root);
   report.scenarios = scenarios;
+  if (planCheck) report.plan_check = planCheck;
   if (o.scenariosOnly) {
     saveReport(ctx.root, report);
     if (ctx.json) console.log(JSON.stringify({ scenarios, file: mdPath }, null, 2));

@@ -4,13 +4,16 @@
   "version": "0.1.0",
   "description": "Bugsy: a security seatbelt for vibe-coded apps. Built with OpenAI, tested with Kane CLI.",
   "type": "module",
-  "bin": { "bugsy": "src/cli.ts" },
+  "bin": {
+    "bugsy": "src/cli.ts"
+  },
   "scripts": {
     "bugsy": "tsx src/cli.ts",
     "test": "node --import tsx --test test/*.test.ts",
     "typecheck": "tsc --noEmit -p ."
   },
   "dependencies": {
+    "@typesafe-ai/sdk": "^0.7.0",
     "adm-zip": "^0.5.16",
     "commander": "^12.1.0",
     "execa": "^9.5.1",

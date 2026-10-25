@@ -11,6 +11,14 @@ export const AccountSchema = z.object({
 });
 export type Account = z.infer<typeof AccountSchema>;
 
+// Kinds of leak check a plan must cover (bugsy.config.json must_check) and that a scenario
+// declares in `checks`. "control" marks the owner baseline scenario.
+export const MUST_CHECK_KINDS = ['read_by_url', 'list', 'change', 'signed_out'] as const;
+export const MustCheckKindSchema = z.enum(MUST_CHECK_KINDS);
+export type MustCheckKind = z.infer<typeof MustCheckKindSchema>;
+export const CheckKindSchema = z.enum(['control', ...MUST_CHECK_KINDS]);
+export type CheckKind = z.infer<typeof CheckKindSchema>;
+
 export const BugsyConfigSchema = z.object({
   app: z.object({
     start: z.string().min(1),
@@ -25,6 +33,8 @@ export const BugsyConfigSchema = z.object({
   tests_dir: z.string().default('tests/authz'),
   evidence_export_dir: z.string().default('evidence'),
   kanehack_report: z.boolean().default(true),
+  /** Leak-check kinds every generated plan must cover. Default: all four (backward compatible). */
+  must_check: z.array(MustCheckKindSchema).default([...MUST_CHECK_KINDS]),
 });
 export type BugsyConfig = z.infer<typeof BugsyConfigSchema>;
 
@@ -42,6 +52,8 @@ export const ScenarioSchema = z.object({
   requirement: z.string(),
   steps: z.array(z.string()).min(1),
   expected: z.array(z.string()).min(1),
+  /** What this scenario checks (self-declared by the generator). Absent on prepared scenarios. */
+  checks: z.array(CheckKindSchema).optional(),
 });
 export type Scenario = z.infer<typeof ScenarioSchema>;
 
