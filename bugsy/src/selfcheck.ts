@@ -34,7 +34,7 @@ export async function selfCheck(ctx: Ctx, scenarioArg: string | undefined, o: Se
   const recordingDirs = scenarios.map((s) => `${testsDir}/output-${s.id}/`);
   const ownOutput = (line: string) => {
     const p = line.slice(3).replace(/^"|"$/g, '');
-    return p === 'bugsy.report.json' || p === 'report.html' || p === 'requirements/authz-scenarios.md' || p.startsWith(exportDir) || p === exportDir || recordingDirs.some((dir) => p.startsWith(dir));
+    return p === 'report/bugsy.report.json' || p === 'report/report.html' || p === 'report/' || p === 'requirements/authz-scenarios.md' || p.startsWith(exportDir) || p === exportDir || recordingDirs.some((dir) => p.startsWith(dir));
   };
   const before = await git.porcelain(ctx.root);
   const foreign = before.filter((l) => !ownOutput(l));

@@ -1,11 +1,13 @@
 // bugsy.report.json (schema §8, history[] kept) and a self-contained report.html (inline CSS, no CDN).
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { PlanCheck } from './verify/jev.ts';
 import type { BugsyReport, Finding, HistoryEntry, Scenario, ScenarioOutcome } from './types.ts';
 
-export const REPORT_JSON = 'bugsy.report.json';
-export const REPORT_HTML = 'report.html';
+// Everything a run produces lives under report/ (the report, its HTML page, and the redacted evidence).
+export const REPORT_DIR = 'report';
+export const REPORT_JSON = 'report/bugsy.report.json';
+export const REPORT_HTML = 'report/report.html';
 
 export type StoredReport = BugsyReport & { scenarios?: Scenario[]; plan_check?: PlanCheck };
 
@@ -29,6 +31,7 @@ export function loadReport(root: string): StoredReport {
 export function saveReport(root: string, r: StoredReport): string {
   r.generated_at = new Date().toISOString();
   const p = resolve(root, REPORT_JSON);
+  mkdirSync(resolve(root, REPORT_DIR), { recursive: true });
   writeFileSync(p, JSON.stringify(r, null, 2) + '\n');
   return p;
 }
@@ -129,7 +132,7 @@ function findingCard(r: StoredReport, f: Finding): string {
   const saw = q ? null : /(?:saw|actual|got|found)\s*:?\s*(.+)$/is.exec(msg);
   const expText = q?.[1] || exp?.[1]?.trim() || sc?.expected?.[sc.expected.length - 1];
   const sawText = q?.[2] || saw?.[1]?.trim();
-  const shot = f.kane?.screenshot;
+  const shot = f.kane?.screenshot ? `../${f.kane.screenshot}` : undefined;
   return `<section class="panel"><div class="ph"><h2>Finding ${esc(sid(f.scenario))}</h2>${pill(v.cls, v.label)}</div>
 <h3>${esc(sc?.title ?? humanize(f.scenario.replace(/^S\d+_/, '')))}</h3>
 ${sc?.requirement ? `<p class="req">${esc(sc.requirement)}</p>` : ''}
@@ -256,6 +259,7 @@ ${timeline(r)}
 
 export function writeHtml(root: string, r: StoredReport): string {
   const p = resolve(root, REPORT_HTML);
+  mkdirSync(resolve(root, REPORT_DIR), { recursive: true });
   writeFileSync(p, renderHtml(r, root));
   return p;
 }
