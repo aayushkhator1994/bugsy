@@ -38,7 +38,9 @@ flowchart LR
   V --> S["Revert, rerun → red<br/>restore"]
 ```
 
-Plain-language walkthrough with more diagrams: [docs/how-it-works.md](docs/how-it-works.md). Build contract: [BUGSY_SPEC.md](BUGSY_SPEC.md).
+**Built with:** OpenAI Responses API (writes the plan) · Codex CLI (writes the fix) · TypeSafe Jev (checks the plan) · Kane CLI (tests it in a real browser).
+
+Architecture, every tool and who decides what: [docs/architecture.md](docs/architecture.md). Plain-language walkthrough: [docs/how-it-works.md](docs/how-it-works.md). Build contract: [BUGSY_SPEC.md](BUGSY_SPEC.md).
 
 ## Run it
 
@@ -103,7 +105,7 @@ Plan check ▸ read_by_url S2 ✔ (Jev 0.97) · list S3 ✔ (0.99) · change S5 
 | `tests/authz/` | Kane `_test.md` files with their replay recordings. |
 | `bugsy/` | The CLI (`scan`, `patch`, `self-check`, `report`) and its unit tests. |
 | `report/` | Created by a run: the findings page, the report JSON, and redacted Kane evidence (results, failure records, screenshots; no network or console logs). Full sealed packs are on the hack hub, never in this repo. |
-| `docs/` | How it works, demo script, end-to-end runbook, launch drafts. `docs/archive/` holds superseded plans. |
+| `docs/` | Architecture, how it works, demo script, end-to-end runbook, launch drafts. `docs/archive/` holds superseded plans. |
 
 ## Known limitations
 
