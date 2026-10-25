@@ -1,3 +1,5 @@
+![Bugsy: your app works, but is Bob's data safe? A security seatbelt for vibe-coded apps. Built with OpenAI, tested with Kane CLI.](docs/social/bugsy-x-poster-v3.png)
+
 # Bugsy
 
 **A security seatbelt for vibe-coded apps.**
@@ -5,8 +7,6 @@
 You write one sentence about who owns what. OpenAI turns it into browser scenarios, each paired with an owner control. Kane CLI runs them in a real browser as two different users and reproduces the leak. Codex patches the server. Kane reruns the same scenarios to prove the fix. Then Bugsy reverts the patch and reruns, to prove the test would catch the leak again.
 
 Built with OpenAI, tested with Kane CLI, at Kane CLI Hack Day SF, 24 Oct 2026. `#KaneCLIHackDay`
-
-![Kane CLI's screenshot: Alice's browser showing Bob's $4,000 invoice](docs/assets/alice-sees-bobs-invoice-kane.jpg)
 
 ## Why
 
@@ -75,6 +75,8 @@ To look at the app yourself: `npm run app`, open http://localhost:3100, sign in 
 ## Findings
 
 All from real Kane runs; ids are Kane execution ids, exports are in `evidence/`.
+
+![Kane CLI's screenshot from the first S2 run: Alice's browser showing Bob's $4,000 invoice](docs/assets/alice-sees-bobs-invoice-kane.jpg)
 
 | Scenario | What a user could do | Found | Fixed and re-verified | Self-check (revert → red) |
 |---|---|---|---|---|
