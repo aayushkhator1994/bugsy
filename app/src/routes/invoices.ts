@@ -39,7 +39,8 @@ invoices.post("/invoices", (req, res) => {
 });
 
 invoices.get("/invoices/:id", (req, res) => {
-  const row = db.prepare("SELECT * FROM invoices WHERE id = ? AND owner_id = ?").get(req.params.id, req.session.userId) as Invoice | undefined;
+  // NOTE: no ownership check here (seeded for the demo)
+  const row = db.prepare("SELECT * FROM invoices WHERE id = ?").get(req.params.id) as Invoice | undefined;
   if (!row) return res.status(404).render("not-found");
   const banner = req.session.banner ?? null;
   delete req.session.banner;
@@ -47,7 +48,8 @@ invoices.get("/invoices/:id", (req, res) => {
 });
 
 invoices.post("/invoices/:id/pay", (req, res) => {
-  const info = db.prepare("UPDATE invoices SET status = 'Paid' WHERE id = ? AND owner_id = ?").run(req.params.id, req.session.userId);
+  // Also no ownership check (scenario S4).
+  const info = db.prepare("UPDATE invoices SET status = 'Paid' WHERE id = ?").run(req.params.id);
   if (info.changes === 0) return res.status(404).render("not-found");
   req.session.banner = `Invoice #${req.params.id} marked as paid`;
   res.redirect(`/invoices/${req.params.id}`);
