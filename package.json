@@ -3,8 +3,12 @@
   "private": true,
   "version": "0.1.0",
   "description": "Bugsy: a security seatbelt for vibe-coded apps. Built with OpenAI, tested with Kane CLI.",
-  "workspaces": ["app", "bugsy"],
+  "workspaces": [
+    "app",
+    "bugsy"
+  ],
   "scripts": {
+    "test": "npm test -w bugsy",
     "app": "tsx app/src/server.ts",
     "bugsy": "tsx bugsy/src/cli.ts",
     "scan": "tsx bugsy/src/cli.ts scan",
@@ -13,6 +17,11 @@
     "report": "tsx bugsy/src/cli.ts report",
     "precommit": "git ls-files -z | grep -zv '^bugsy/test/' | xargs -0 grep -In -E 'sk-[A-Za-z0-9_-]{20,}' && exit 1 || exit 0"
   },
-  "devDependencies": { "tsx": "^4.19.2", "typescript": "^5.6.3" },
-  "engines": { "node": ">=20" }
+  "devDependencies": {
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
+  },
+  "engines": {
+    "node": ">=20"
+  }
 }
